@@ -1,0 +1,159 @@
+.tree {
+	padding:0;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.tree li {
+	list-style-type:none;
+	cursor:pointer;
+}
+.sub li {
+	list-style-type:none;
+	cursor:pointer;
+}
+.tree .parent:before {
+	content:"\25b6 \0000a0";
+}
+
+.tree .parent.open:before {
+	content:"\25bc \0000a0";
+}
+
+.tree ul {
+	display:none;
+}
+
+.tree li.open > ul {
+	display:block;
+}
+
+.tree li span {
+	position:absolute;
+	left:50%;
+}
+.tree ul:hover, .boom {
+	background-color:#fff;
+}
+.tree li:hover .boom {
+	background-color:#f5f5f5;
+}
+
+.autocomplete-suggestions {
+	border: 1px solid #999;
+	background: #fff;
+	cursor: default;
+	overflow: auto;
+}
+.autocomplete-suggestion {
+	padding: 10px 5px;
+	font-size: 1.2em;
+	white-space: nowrap;
+	overflow: hidden;
+}
+.autocomplete-selected {
+	background: #f0f0f0;
+}
+.autocomplete-suggestions strong {
+	font-weight: normal;
+	color: #3399ff;
+}
+#searchfield {
+	display: block;
+	width: 100%;
+	//text-align: center;
+	margin-bottom: 35px;
+}
+ 
+#searchfield form {
+  display: inline-block;
+  background: #eeefed;
+  padding: 0;
+  margin: 0;
+  padding: 5px;
+  border-radius: 3px;
+  margin: 5px 0 0 0;
+}
+#searchfield form .biginput {
+ 
+  padding: 0 10px 0 10px;
+  background-color: #fff;
+  border: 1px solid #c8c8c8;
+  border-radius: 3px;
+  color: #aeaeae;
+  font-weight:normal;
+  //font-size: 1.5em;
+  -webkit-transition: all 0.2s linear;
+  -moz-transition: all 0.2s linear;
+  transition: all 0.2s linear;
+}
+#searchfield form .biginput:focus {
+  color: #858585;
+}
+.administration .col-lg-4 {
+	margin-bottom: 20px;
+	text-align: center;
+}
+.administration h2 {
+	font-weight: normal;
+}
+.administration .col-lg-4 p {
+	margin-right: 10px;
+	margin-left: 10px;
+}
+tr.clickableRow {
+	cursor: pointer;
+}
+
+.panel-heading a:after {
+    font-family: 'Glyphicons Halflings';
+    content: "\e080";    
+    float: right; 
+    color: white; 
+}
+.panel-heading a.collapsed:after {
+    content: "\e114";
+}
+
+.error-block{
+ color: red;
+}
+
+.newpass{
+	color: blue;
+}
+
+.legend label span {
+	position:absolute;
+	left:40%;
+}
+
+.bottom_fix{
+	margin-bottom: 20px;
+}
+
+.spacer {
+    margin-top: 20px;
+}
+
+td.details-control {
+    background: url('../images/add.png') no-repeat center center;
+    cursor: pointer;
+}
+tr.shown td.details-control {
+    background: url('../images/delete.png') no-repeat center center;
+}
+
+.RbtnMargin {
+	margin-right: 10px;
+}
+
+.LbtnMargin {
+	margin-left: 20px;
+}
+
+

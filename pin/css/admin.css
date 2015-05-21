@@ -1,0 +1,15 @@
+/* Containers----------------------------------------------------------------------------------------------------*/
+#contentArea {
+  width:100%;
+  text-align:center;
+}
+#contentArea #leftSide {
+	width:50%;
+	float:left;
+	
+}
+#contentArea #rightSide {
+	width:50%;
+	float:left;
+	
+}
