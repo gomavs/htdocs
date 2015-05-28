@@ -151,6 +151,7 @@ include 'includes/navbar.php';
 <script type="text/javascript" src="js/jquery.autocomplete.min.js"></script>
 <script src="js/bootstrap.min.js"></script>
 <script src="js/timeStudy.js"></script>
+<script src="js/jquery-idleTimeout.js"></script>
 <script src="js/jquery.runner-min.js" type="text/javascript"></script>
 <script>
 	window.machine_list = <?php echo json_encode($machine_list); ?>;

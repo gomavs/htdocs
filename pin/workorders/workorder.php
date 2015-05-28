@@ -166,7 +166,6 @@ if(isset($_GET['id'])){
 	$query->execute();
 	$result = $query->get_result();
 	$assignedJob = "";
-	$assignmentTab = "";
 	$assignedTechs = array();
 	while (($row = $result->fetch_object()) !== NULL) {
 		$query1 = $db->prepare("SELECT firstname, lastname FROM users WHERE id = ?");
@@ -175,15 +174,99 @@ if(isset($_GET['id'])){
 		$result1 = $query1->get_result();
 		$row1 = $result1->fetch_assoc();
 		$assignedJob = $assignedJob."<div class=\"row\"><div class=\"col-md-5\">".$row1['firstname']." ".$row1['lastname']."</div></div>";
-		$i = 1;
-		if($_SESSION['user_id'] == $row->assignedTo){
-			$assignmentTab = $assignmentTab. "<li class=\"active\"><a href=\"#1\" data-toggle=\"tab\" id=\"worker-".$row->assignedTo."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
-		}else{
-			$assignmentTab = $assignmentTab."<li><a href=\"#1\" data-toggle=\"tab\" id=\"worker-".$row->assignedTo."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
-		}
 		$assignedTechs[] = $row->assignedTo;
 	}
-	
+	// Assignment work tabs
+	$assignmentTab = "";
+	$workDone = "";
+	$workTimes = "";
+	$i = 1;
+	$lastTime = "<div class=\"col-md-2\"><div class=\"row\">5/28/15</div><div class=\"row\" id=\"startTime\">&nbsp;</div><div class=\"row\" id=\"stopTime\">&nbsp;</div><div class=\"row\" id=\"runner\">&nbsp;</div></div>";
+	$elapsedTime = 0;
+	$startRunner = 0;
+	foreach($assignedTechs as $value){
+		$query = $db->prepare("SELECT * FROM workdata WHERE workOrderId = ? AND assignedTo = ?");
+		$query->bind_param("ii", $workOrderId, $value);
+		$query->execute();
+		$result = $query->get_result();
+		while (($row = $result->fetch_object()) !== NULL) {
+			$query1 = $db->prepare("SELECT firstname, lastname FROM users WHERE id = ?");
+			$query1->bind_param("i", $row->assignedTo);
+			$query1->execute();
+			$result1 = $query1->get_result();
+			$row1 = $result1->fetch_assoc();
+			
+			if(in_array($_SESSION['user_id'], $assignedTechs)){
+				if($_SESSION['user_id'] == $value){
+					$assignmentTab = $assignmentTab. "<li class=\"active\"><a href=\"#1\" data-toggle=\"tab\" id=\"worker-".$value."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+					$workDone = $row->workDone;
+					$startButton = "<button id=\"startTimer-".$value."\" type=\"button\" class=\"btn btn-success btn-xs\">Start</button>";
+					$query2 = $db->prepare("SELECT * FROM worktimes WHERE userId = ? AND workOrderId = ? ORDER BY startTime DESC");
+					$query2->bind_param("ii", $value, $workOrderId);
+					$query2->execute();
+					$result2 = $query2->get_result();
+					while (($row2 = $result2->fetch_object()) !== NULL) {
+						$lastDate = "";
+						
+						echo $row2->startTime;
+						$lastDate = date("N/j/y", $row2->startTime);
+						echo $lastDate;
+						$lastStart = "@".$row2->startTime;
+						$lastStart = new DateTime($lastStart);
+						$lastStart->setTimezone(new DateTimeZone('America/Chicago'));
+						$lastStart = $lastStart->format("H:i");
+						$lastStop = "@".$row2->stopTime;
+						$lastStop = new DateTime($lastStop);
+						$lastStop->setTimezone(new DateTimeZone('America/Chicago'));
+						$lastStop = $lastStop->format("H:i");
+						if($row2->stopTime == 0){
+							$elapsedTime = time() - $row2->startTime;
+							$startRunner = $elapsedTime;
+							$lastTime = "<div class=\"col-md-2\"><div class=\"row\">".$lastDate."</div><div class=\"row\" id=\"startTime\">".$lastStart."</div><div class=\"row\" id=\"stopTime\">&nbsp;</div><div class=\"row\" id=\"runner\">".$elapsedTime."</div></div>";
+							$startButton = "<button id=\"stopTimer-".$value."\" type=\"button\" class=\"btn btn-danger btn-xs\">Stop</button>";
+						}else{
+							$startRunner = 0;
+							$elapsedTime = $row2->stopTime - $row2->startTime + 60;
+							$elapsedTime = "@".$elapsedTime;
+							$elapsedTime = new DateTime($elapsedTime);
+							$elapsedTime = $elapsedTime->format("H:i");
+							$lastTime = $lastTime."<div class=\"col-md-2\"><div class=\"row\">".$lastDate."</div><div class=\"row\">".$lastStart."</div><div class=\"row\">".$lastStop."</div><div class=\"row\">".$elapsedTime."</div></div>";
+						}
+					}
+				}else{
+					
+					$assignmentTab = $assignmentTab."<li><a href=\"#1\" data-toggle=\"tab\" id=\"worker-".$value."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+				}
+			}else{
+				if($i == 1){
+					$assignmentTab = $assignmentTab. "<li class=\"active\"><a href=\"#1\" data-toggle=\"tab\" id=\"worker-".$value."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+					$workDone = $row->workDone;
+					$startButton = "<button id=\"startTimer-".$value."\" type=\"button\" class=\"btn btn-success btn-xs\" disabled>Start</button>";
+					$query2 = $db->prepare("SELECT * FROM worktimes WHERE userId = ? AND workOrderId = ? ORDER BY startTime DESC");
+					$query2->bind_param("ii", $value, $workOrderId);
+					$query2->execute();
+					$result2 = $query2->get_result();
+					while (($row2 = $result2->fetch_object()) !== NULL) {
+						if($row2->stopTime == 0){
+							$elapsedTime = time() - $row2->startTime; 
+							$lastDate = date("N/j/y", $row2->startTime);
+							$lastStart = "@".$row2->startTime;
+							$lastStart = new DateTime($lastStart);
+							$lastStart->setTimezone(new DateTimeZone('America/Chicago'));
+							$lastStart = $lastStart->format("G:i");
+							$lastTime = "<div class=\"col-md-2\"><div class=\"row\">".$lastDate."</div><div class=\"row\" id=\"startTime\">".$lastStart."</div><div class=\"row\" id=\"stopTime\">&nbsp;</div><div class=\"row\" id=\"runner\">".$elapsedTime."</div></div>";
+							
+							$startButton = "<button id=\"stopTimer-".$value."\" type=\"button\" class=\"btn btn-danger btn-xs\" disabled>Stop</button>";
+						}
+					}
+				}else{
+					$assignmentTab = $assignmentTab."<li><a href=\"#1\" data-toggle=\"tab\" id=\"worker-".$value."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+				}
+				$i++;
+			}
+		}
+	}
+
 	// checked Technicians
 	$query = $db->prepare("SELECT * FROM users WHERE department = 600 ORDER BY firstname ASC");
 	$query->execute();
@@ -381,7 +464,7 @@ include '../includes/navbar.php';
 									<div class="well well-sm">
 									<div class="row">
 										<div class="col-md-3"><label>Work Done:</label></div>
-										<div class="col-md-8"><textarea class="form-control" name="textDescription" id="textDescription" rows="8"></textarea></div>
+										<div class="col-md-8"><textarea class="form-control" name="workDone" id="workDone" rows="8"><?php echo $workDone; ?></textarea></div>
 										<div class="col-md-1">
 											<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#descriptionModal" aria-label="Edit">
 												<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
@@ -407,22 +490,17 @@ include '../includes/navbar.php';
 												<div class="row"><b>Stop Time</b></div>
 												<div class="row"><b>Total Time</b></div>
 											</div>
-											<div class="col-md-2">
+											<?php echo $lastTime; ?>
+											<!--<div class="col-md-2">
 												<div class="row">5/21/15</div>
 												<div class="row" id="startTime">&nbsp;</div>
 												<div class="row" id="stopTime">&nbsp;</div>
 												<div class="row" id="runner"></div>
-											</div>
-											<div class="col-md-2">
-												<div class="row">5/15/15</div>
-												<div class="row">10:45</div>
-												<div class="row">11:50</div>
-												<div class="row">1:05</div>
-											</div>
+											</div>-->
 										</div>
 									</div>
 									<div class="col-md-2" id="do_action">
-										<button id="startTimer" type="button" class="btn btn-success btn-xs">Start</button>
+										<?php echo $startButton; ?>
 									</div>
 								</div>
 							</div>
@@ -600,12 +678,18 @@ include '../includes/navbar.php';
 <script src="../js/bootstrap.min.js"></script>
 <script src="../js/jquery-ui.js"></script>
 <script src="../js/jquery.runner-min.js" type="text/javascript"></script>
+<script src="../js/jquery-idleTimeout.js"></script>
 <script>
 	window.workOrderId = <?php echo $workOrderId; ?>;
 	window.user_id = <?php echo $_SESSION['user_id']; ?>;
 	$(document).ready(function(){
+		/*$(document).idleTimeout({ 
+			inactivity: 10000, noconfirm: 10000, sessionAlive: 10000 
+		});*/
+		var startRunner = <?php echo $startRunner; ?>;
 		var itemType = <?php echo $workTypeId; ?>;
 		var selectOtherChecked = <?php echo $checkedOther; ?>;
+		
 		if(itemType == 5){
 			$('#selectItem').removeAttr("required");
 			$("#dropdown").addClass("hidden");
@@ -777,30 +861,40 @@ include '../includes/navbar.php';
 				$("#inputHours").removeClass("has-error");
 			}
 		});
-		$('#runner').runner({
-			milliseconds: false
-		});
-		$( "#do_action" ).on( "click", "[id=startTimer]", function() {
-			//var buttonId = this.id;
+		if(startRunner > 0){
+			$("#runner").runner({
+				startAt: startRunner*1000, 
+				milliseconds: false
+			});
+			$("#runner").runner('start');
+		}else{
+			$('#runner').runner({
+				milliseconds: false
+			});
+		};
+		$( "#do_action" ).on( "click", "[id^=startTimer-]", function() {
+			var buttonId = this.id;
+			var arr = buttonId.split('-');
+			buttonId = arr[1];
 			$('#runner').runner('start');
-			var action_button = "<button id=\"stopTimer\" type=\"button\" class=\"btn btn-danger btn-xs\">Stop</button>";
+			var action_button = "<button id=\"stopTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-danger btn-xs\">Stop</button>";
 			$("#do_action").html(action_button);
 			var d = new Date(); // for now
 			var hours = d.getHours(); // => 9
 			var mins = d.getMinutes(); // =>  30
 			var currentTime = hours + ":" + mins;
 			$("#startTime").html(currentTime);
-			/*var request = $.getJSON("ajax/starttimes.php", {id : partId, machine : buttonId}, function(data) {
+			var request = $.getJSON("ajax/startwork.php", {id : workOrderId, user : user_id}, function(data) {
 				console.log(data);
-				$.each(data, function(key, value) {
-					var a = format_date(value.start_time);
-					$("#machine-" + buttonId + " td.study_date").html(a);
-				});
-			});*/
+				
+			});
 		});
 		
-		$( "#do_action" ).on( "click", "[id=stopTimer]", function() {
-			//var buttonId = this.id;
+		$( "#do_action" ).on( "click", "[id^=stopTimer-]", function() {
+			var buttonId = this.id;
+			var buttonId = this.id;
+			var arr = buttonId.split('-');
+			buttonId = arr[1];
 			$("#runner").runner('stop');
 			var action_button = "<button id=\"resetTimer\" type=\"button\" class=\"btn btn-warning btn-xs\">Reset</button>  <button id=\"doneTimer\"type=\"button\" class=\"btn btn-primary btn-xs\">Done</button>";
 			$("#do_action").html(action_button);
