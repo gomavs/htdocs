@@ -9,5 +9,5 @@ Known issues
 7.	Finish request type on requestwork.php -DONE
 8.	Create admin pages for adding trouble types
 9.	Create alerts
-10.	Create user admin page
+10.	Create user admin page - DONE
 11.	Make it so that work orders can be given an order preference.

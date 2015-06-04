@@ -37,7 +37,7 @@ include '../includes/navbar.php';
 			<h2>Users</h2>
 			<p>Here you can add, edit and deactivate users.</p>
 			<p>
-				<a class="btn btn-primary" href="users.php" role="button">Users</a>
+				<a class="btn btn-primary" href="useradmin.php" role="button">Users</a>
 			</p>
 		</div>
 		<div class="col-lg-4">

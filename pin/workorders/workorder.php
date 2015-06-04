@@ -1,8 +1,16 @@
 <?php
 require '../includes/check_login.php';
-//require_once '../includes/dbConnect.php';
 if(isset($_GET['id'])){
 	$workOrderId = $_GET['id'];
+	if(isset($_POST['workDone'])){
+		$userId = $_SESSION['user_id'];
+		$workDone = $_POST['userWork'];
+		$workOrderId = $_GET["id"];
+		$query = $db->prepare("UPDATE workdata SET workDone = ? WHERE workOrderId = ? AND assignedTo = ?");
+		$query->bind_param("sii", $workDone, $workOrderId, $userId);
+		$query->execute();
+	}
+
 	if(strlen($workOrderId)< 6){
 		$k = strlen($workOrderId);
 		$workOrderNum = "";
@@ -12,6 +20,16 @@ if(isset($_GET['id'])){
 		$workOrderNum = $workOrderNum.$workOrderId;
 	}else{
 		$workOrderNum = $workOrderId;
+	}
+	if($_SESSION['user_authWO'] >= 3 || $_SESSION['user_auth_level'] == 10){
+		$disable1 = "";
+	}else{
+		$disable1 = "disabled";
+	}
+	if($_SESSION['user_authWO'] >= 5 || $_SESSION['user_auth_level'] == 10){
+		$disable2 = "";
+	}else{
+		$disable2 = "disabled";
 	}
 	$query = $db->prepare("SELECT * FROM workorder WHERE id = ?");
 	$query->bind_param("i", $workOrderId);
@@ -161,13 +179,45 @@ if(isset($_GET['id'])){
 		}
 	}
 	// Assigned Technicians
+	$userActive = 0;
 	$query = $db->prepare("SELECT * FROM workdata WHERE workOrderId = ?");
 	$query->bind_param("i", $workOrderId);
 	$query->execute();
 	$result = $query->get_result();
-	$assignedJob = "";
-	$assignedTechs = array();
 	while (($row = $result->fetch_object()) !== NULL) {
+		if($_SESSION['user_id'] == $row->assignedTo){
+			$userActive = 1;
+		}
+	}
+	$assignedJob = "";
+	$workCompleted = "Yes";
+	$assignedTechs = array();
+	$assignmentTab = "";
+	$workDone = "";
+	$workTimes = "";
+	$i = 1;
+	$activeTab = "active";
+	$topPane = "";
+	$elapsedTime = 0;
+	$startRunner = [];
+	$openWorkTimeId = "";
+	$completePane = "";
+	
+	$query = $db->prepare("SELECT * FROM workdata WHERE workOrderId = ?");
+	$query->bind_param("i", $workOrderId);
+	$query->execute();
+	$result = $query->get_result();
+	while (($row = $result->fetch_object()) !== NULL) {
+		$userId = $row->assignedTo;
+		$lastTime = "";
+		$newColumn = "";
+		$actionButton = "";
+		$myWork = "disabled";
+		$workButton = "";
+		$myForm = "";
+		$myFormClose = "";
+		$workName = "";
+		$workDone = $row->workDone;
 		$query1 = $db->prepare("SELECT firstname, lastname FROM users WHERE id = ?");
 		$query1->bind_param("i", $row->assignedTo);
 		$query1->execute();
@@ -175,98 +225,75 @@ if(isset($_GET['id'])){
 		$row1 = $result1->fetch_assoc();
 		$assignedJob = $assignedJob."<div class=\"row\"><div class=\"col-md-5\">".$row1['firstname']." ".$row1['lastname']."</div></div>";
 		$assignedTechs[] = $row->assignedTo;
-	}
-	// Assignment work tabs
-	$assignmentTab = "";
-	$workDone = "";
-	$workTimes = "";
-	$i = 1;
-	$lastTime = "<div class=\"col-md-2\"><div class=\"row\">5/28/15</div><div class=\"row\" id=\"startTime\">&nbsp;</div><div class=\"row\" id=\"stopTime\">&nbsp;</div><div class=\"row\" id=\"runner\">&nbsp;</div></div>";
-	$elapsedTime = 0;
-	$startRunner = 0;
-	foreach($assignedTechs as $value){
-		$query = $db->prepare("SELECT * FROM workdata WHERE workOrderId = ? AND assignedTo = ?");
-		$query->bind_param("ii", $workOrderId, $value);
-		$query->execute();
-		$result = $query->get_result();
-		while (($row = $result->fetch_object()) !== NULL) {
-			$query1 = $db->prepare("SELECT firstname, lastname FROM users WHERE id = ?");
-			$query1->bind_param("i", $row->assignedTo);
-			$query1->execute();
-			$result1 = $query1->get_result();
-			$row1 = $result1->fetch_assoc();
-			
-			if(in_array($_SESSION['user_id'], $assignedTechs)){
-				if($_SESSION['user_id'] == $value){
-					$assignmentTab = $assignmentTab. "<li class=\"active\"><a href=\"#1\" data-toggle=\"tab\" id=\"worker-".$value."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
-					$workDone = $row->workDone;
-					$startButton = "<button id=\"startTimer-".$value."\" type=\"button\" class=\"btn btn-success btn-xs\">Start</button>";
-					$query2 = $db->prepare("SELECT * FROM worktimes WHERE userId = ? AND workOrderId = ? ORDER BY startTime DESC");
-					$query2->bind_param("ii", $value, $workOrderId);
-					$query2->execute();
-					$result2 = $query2->get_result();
-					while (($row2 = $result2->fetch_object()) !== NULL) {
-						$lastDate = "";
-						
-						echo $row2->startTime;
-						$lastDate = date("N/j/y", $row2->startTime);
-						echo $lastDate;
-						$lastStart = "@".$row2->startTime;
-						$lastStart = new DateTime($lastStart);
-						$lastStart->setTimezone(new DateTimeZone('America/Chicago'));
-						$lastStart = $lastStart->format("H:i");
-						$lastStop = "@".$row2->stopTime;
-						$lastStop = new DateTime($lastStop);
-						$lastStop->setTimezone(new DateTimeZone('America/Chicago'));
-						$lastStop = $lastStop->format("H:i");
-						if($row2->stopTime == 0){
-							$elapsedTime = time() - $row2->startTime;
-							$startRunner = $elapsedTime;
-							$lastTime = "<div class=\"col-md-2\"><div class=\"row\">".$lastDate."</div><div class=\"row\" id=\"startTime\">".$lastStart."</div><div class=\"row\" id=\"stopTime\">&nbsp;</div><div class=\"row\" id=\"runner\">".$elapsedTime."</div></div>";
-							$startButton = "<button id=\"stopTimer-".$value."\" type=\"button\" class=\"btn btn-danger btn-xs\">Stop</button>";
-						}else{
-							$startRunner = 0;
-							$elapsedTime = $row2->stopTime - $row2->startTime + 60;
-							$elapsedTime = "@".$elapsedTime;
-							$elapsedTime = new DateTime($elapsedTime);
-							$elapsedTime = $elapsedTime->format("H:i");
-							$lastTime = $lastTime."<div class=\"col-md-2\"><div class=\"row\">".$lastDate."</div><div class=\"row\">".$lastStart."</div><div class=\"row\">".$lastStop."</div><div class=\"row\">".$elapsedTime."</div></div>";
-						}
-					}
-				}else{
-					
-					$assignmentTab = $assignmentTab."<li><a href=\"#1\" data-toggle=\"tab\" id=\"worker-".$value."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
-				}
+		if($row->status == 0){
+			$workCompleted = "No";
+		}
+		$paneActive = "";
+		if($userActive == 1){
+			if($_SESSION['user_id'] == $userId){
+				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab active\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+				$startButton = "<button id=\"startTimer-".$userId."\" type=\"button\" class=\"btn btn-success btn-xs\">Start</button>";
+				$paneActive = "active";
+				$newColumn = "newCol";
+				$actionButton = "do_action";
+				$myWork = "";
+				$myForm = "<form role=\"form\" method=\"post\" id=\"work\">";
+				$myFormClose = "</form>";
+				$workName = " name=\"userWork\"";
+				$workButton = "<button type=\"submit\" name=\"workDone\" formmethod=\"post\" class=\"btn btn-primary btn-sm\">Post Work</button>";
+				
 			}else{
-				if($i == 1){
-					$assignmentTab = $assignmentTab. "<li class=\"active\"><a href=\"#1\" data-toggle=\"tab\" id=\"worker-".$value."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
-					$workDone = $row->workDone;
-					$startButton = "<button id=\"startTimer-".$value."\" type=\"button\" class=\"btn btn-success btn-xs\" disabled>Start</button>";
-					$query2 = $db->prepare("SELECT * FROM worktimes WHERE userId = ? AND workOrderId = ? ORDER BY startTime DESC");
-					$query2->bind_param("ii", $value, $workOrderId);
-					$query2->execute();
-					$result2 = $query2->get_result();
-					while (($row2 = $result2->fetch_object()) !== NULL) {
-						if($row2->stopTime == 0){
-							$elapsedTime = time() - $row2->startTime; 
-							$lastDate = date("N/j/y", $row2->startTime);
-							$lastStart = "@".$row2->startTime;
-							$lastStart = new DateTime($lastStart);
-							$lastStart->setTimezone(new DateTimeZone('America/Chicago'));
-							$lastStart = $lastStart->format("G:i");
-							$lastTime = "<div class=\"col-md-2\"><div class=\"row\">".$lastDate."</div><div class=\"row\" id=\"startTime\">".$lastStart."</div><div class=\"row\" id=\"stopTime\">&nbsp;</div><div class=\"row\" id=\"runner\">".$elapsedTime."</div></div>";
-							
-							$startButton = "<button id=\"stopTimer-".$value."\" type=\"button\" class=\"btn btn-danger btn-xs\" disabled>Stop</button>";
-						}
-					}
-				}else{
-					$assignmentTab = $assignmentTab."<li><a href=\"#1\" data-toggle=\"tab\" id=\"worker-".$value."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
-				}
-				$i++;
+				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+				$startButton = "<button id=\"startTimer-".$userId."\" type=\"button\" class=\"btn btn-success btn-xs\" disabled>Start</button>";
+			}
+		}else{
+			if($i == 1){
+				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab active\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+				$startButton = "<button id=\"startTimer-".$userId."\" type=\"button\" class=\"btn btn-success btn-xs\" disabled>Start</button>";
+				$paneActive = "active";
+			}else{
+				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+				$startButton = "<button id=\"startTimer-".$userId."\" type=\"button\" class=\"btn btn-success btn-xs\" disabled>Start</button>";
 			}
 		}
-	}
+		$topPane = "<div class=\"tab-pane ".$paneActive."\" id=\"".$userId."\"><div class=\"row col-md-12 spacer\">".$myForm."<div class=\"col-md-6 rWellPadding\"><div class=\"row\"><div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-2\"><label>Work Done:</label></div><div class=\"col-md-8\"><textarea class=\"form-control\"".$workName." id=\"workDone\" rows=\"8\" ".$myWork.">".$workDone."</textarea></div><div class=\"col-md-2\">".$workButton."</div></div></div></div></div>".$myFormClose."<div class=\"col-md-6 lWellPadding\" ><div class=\"row\"><div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-1 col-md-offset-11\"><button type=\"button\" class=\"btn btn-default btn-sm\" data-toggle=\"modal\" data-target=\"#hoursModal\" aria-label=\"Edit\"><span class=\"glyphicon glyphicon-pencil\" aria-hidden=\"true\"></span></button></div></div><div class=\"row row-horizon LbtnMargin RbtnMargin spacer\"><div class=\"col-md-3 ". $newColumn ."\"><div class=\"row\"><b>Date</b></div><div class=\"row\"><b>Start Time</b></div><div class=\"row\"><b>Stop Time</b></div><div class=\"row\"><b>Total Time</b></div></div>";
 
+		$query2 = $db->prepare("SELECT * FROM worktimes WHERE userId = ? AND workOrderId = ? ORDER BY startTime DESC");
+		$query2->bind_param("ii", $userId, $workOrderId);
+		$query2->execute();
+		$result2 = $query2->get_result();
+		while (($row2 = $result2->fetch_object()) !== NULL) {
+			$lastDate = date("m/j/y", $row2->startTime);
+			$lastStart = "@".$row2->startTime;
+			$lastStart = new DateTime($lastStart);
+			$lastStart->setTimezone(new DateTimeZone('America/Chicago'));
+			$lastStart = $lastStart->format("H:i");
+			$lastStop = "@".$row2->stopTime;
+			$lastStop = new DateTime($lastStop);
+			$lastStop->setTimezone(new DateTimeZone('America/Chicago'));
+			$lastStop = $lastStop->format("H:i");
+			if($row2->stopTime == 0){
+				$openWorkTimeId = $row->id;
+				$elapsedTime = time() - $row2->startTime;
+				$startRunner[] = ["user"=>$userId, "elapsed_time"=>$elapsedTime];
+				$lastTime = "<div class=\"col-md-2\"><div class=\"row\">".$lastDate."</div><div class=\"row\">".$lastStart."</div><div class=\"row\" id=\"stopTime-".$userId."\">&nbsp;</div><div class=\"row\" id=\"runner-".$userId."\">".$elapsedTime."</div></div>";
+				if($_SESSION['user_id'] == $userId){
+					$startButton = "<button id=\"stopTimer-".$userId."\" type=\"button\" class=\"btn btn-danger btn-xs\">Stop</button>";
+				}else{
+					$startButton = "<button type=\"button\" class=\"btn btn-danger btn-xs\" disabled>Stop</button>";
+				}
+			}else{
+				$elapsedTime = $row2->stopTime - $row2->startTime + 60;
+				$elapsedTime = "@".$elapsedTime;
+				$elapsedTime = new DateTime($elapsedTime);
+				$elapsedTime = $elapsedTime->format("H:i");
+				$lastTime = $lastTime."<div class=\"col-md-2\"><div class=\"row\">".$lastDate."</div><div class=\"row\">".$lastStart."</div><div class=\"row\">".$lastStop."</div><div class=\"row\">".$elapsedTime."</div></div>";
+			}
+		}
+		$completePane = $completePane.$topPane.$lastTime."</div></div></div><div class=\"row\"><div class=\"col-md-2 ".$actionButton."\">". $startButton ."</div></div></div></div><div class=\"row col-md-12 spacer\"><div class=\"col-md-6 rWellPadding\"><div class=\"row\"><div class=\"well well-sm\">test</div></div></div></div></div>";
+		$i++;
+	}
+	
 	// checked Technicians
 	$query = $db->prepare("SELECT * FROM users WHERE department = 600 ORDER BY firstname ASC");
 	$query->execute();
@@ -300,8 +327,18 @@ if(isset($_GET['id'])){
 			}
 		}
 	}
-		
-
+	//Total Hours worked on job	
+	$query = $db->prepare("SELECT * FROM worktimes WHERE workOrderId = ? AND stopTime > 0");
+	$query->bind_param("i", $workOrderId);
+	$query->execute();
+	$result = $query->get_result();
+	$totalHours = 0;
+	while (($row = $result->fetch_object()) !== NULL) {
+		$totalHours = $totalHours + ($row->stopTime - $row->startTime);
+	}
+	$totalTime = "@".$totalHours;
+	$totalTime = new DateTime($totalTime);
+	$totalTime = $totalTime->format("H:i");
 }
 
 function secondsToTime($seconds) {
@@ -309,7 +346,6 @@ function secondsToTime($seconds) {
     $dtT = new DateTime("@$seconds");
     return $dtF->diff($dtT)->format('%a,%h,%i');
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/html">
@@ -355,7 +391,7 @@ include '../includes/navbar.php';
 							<div class="panel-body">
 								<div class="row">
 									<div class="pull-right RbtnMargin">
-										<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#requestModal" aria-label="Edit">
+										<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#requestModal" aria-label="Edit" <?php echo $disable1; ?>>
 											<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
 										</button>
 									</div>
@@ -393,7 +429,7 @@ include '../includes/navbar.php';
 							<div class="panel-body">
 								<div class="row">
 									<div class="pull-right RbtnMargin">
-										<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Edit">
+										<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Edit" <?php echo $disable2; ?>>
 											<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
 										</button>
 									</div>
@@ -428,26 +464,26 @@ include '../includes/navbar.php';
 							<div class="panel-body">
 								<div class="row">
 									<div class="pull-right RbtnMargin">
-										<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#dataModal" aria-label="Edit">
+										<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#dataModal" aria-label="Edit" <?php echo $disable2; ?>>
 											<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
 										</button>
 									</div>
 								</div>
 								<div class="row">
 									<div class="col-md-7"><label>Completed:</label></div>
-									<div class="col-md-3"><small>No</small></div>
+									<div class="col-md-3"><small><?php echo $workCompleted; ?></small></div>
 								</div>
 								<div class="row">
 									<div class="col-md-7"><label>Total Hours:</label></div>
-									<div class="col-md-5"><small>30.5</small></div>
+									<div class="col-md-5" id="totalHours"><small><?php echo $totalTime; ?></small></div>
 								</div>
 								<div class="row">
 									<div class="col-md-7"><label>Parts Required:</label></div>
-									<div class="col-md-5"><small>Yes</small></div>
+									<div class="col-md-5"><small>N/A</small></div>
 								</div>
 								<div class="row">
 									<div class="col-md-7"><label>Parts Cost:</label></div>
-									<div class="col-md-5"><small>$12,762.00</small></div>
+									<div class="col-md-5"><small>N/A</small></div>
 								</div>
 							</div>
 						</div>								
@@ -459,57 +495,8 @@ include '../includes/navbar.php';
 							<?php echo $assignmentTab; ?>
 						</ul>
 						<div class="tab-content ">
-							<div class="tab-pane active" id="1">
-								<div class="row col-md-6 spacer">
-									<div class="well well-sm">
-									<div class="row">
-										<div class="col-md-3"><label>Work Done:</label></div>
-										<div class="col-md-8"><textarea class="form-control" name="workDone" id="workDone" rows="8"><?php echo $workDone; ?></textarea></div>
-										<div class="col-md-1">
-											<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#descriptionModal" aria-label="Edit">
-												<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-											</button>
-										</div>
-									</div>
-									</div>
-								</div>
-								<div class="row col-md-6 spacer LbtnMargin" >
-									<div class="well well-sm">
-									
-										<div class="row">
-											<div class="col-md-1 col-md-offset-11">
-												<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#hoursModal" aria-label="Edit">
-													<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-												</button>
-											</div>
-										</div>
-										<div class="row row-horizon LbtnMargin RbtnMargin">
-											<div class="col-md-3">
-												<div class="row"><b>Date</b></div>
-												<div class="row"><b>Start Time</b></div>
-												<div class="row"><b>Stop Time</b></div>
-												<div class="row"><b>Total Time</b></div>
-											</div>
-											<?php echo $lastTime; ?>
-											<!--<div class="col-md-2">
-												<div class="row">5/21/15</div>
-												<div class="row" id="startTime">&nbsp;</div>
-												<div class="row" id="stopTime">&nbsp;</div>
-												<div class="row" id="runner"></div>
-											</div>-->
-										</div>
-									</div>
-									<div class="col-md-2" id="do_action">
-										<?php echo $startButton; ?>
-									</div>
-								</div>
-							</div>
-							<div class="tab-pane" id="2">
-								<h3>Notice the gap between the content and tab after applying a background color</h3>
-							</div>
-							<div class="tab-pane" id="3">
-								<h3>add clearfix to tab-content (see the css)</h3>
-							</div>
+							<?php echo $completePane; ?>
+							
 						</div>
 					</div>
 				</div>
@@ -521,49 +508,51 @@ include '../includes/navbar.php';
 								<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
 								<h4 class="modal-title" id="requestModalLabel">Edit Request Information</h4>
 							</div>
-							<div class="modal-body form-group">
-								<div class="row form-group">
-									<div class="col-md-3"><label for="selectRequestType" class="control-label">Request Type</label></div>
-									<div class="col-md-4"><select id="selectRequestType" name="selectRequestType" class="form-control" required><option value="0">-- Choose Type --</option><?php echo $type_list; ?></select></div>
-								</div>
-								<div class="row form-group" id="machines">
-									<div class="col-md-3"><label for="selectMachine" class="control-label" id="itemType"><?php echo $workType; ?></label></div>
-									<div class="col-md-5" id="dropdown">
-										<select id="selectItem" name="selectItem" class="form-control" required>
-											<?php echo $item_list; ?>
-										</Select>
+							<form>
+								<div class="modal-body form-group">
+									<div class="row form-group">
+										<div class="col-md-3"><label for="selectRequestType" class="control-label">Request Type</label></div>
+										<div class="col-md-4"><select id="selectRequestType" name="selectRequestType" class="form-control" required><option value="0">-- Choose Type --</option><?php echo $type_list; ?></select></div>
 									</div>
-									<div class="col-md-4 hidden" id="textOther">
-										<input type="text" class="form-control" id="inputOther" name="inputOther" value="<?php echo $other; ?>">
+									<div class="row form-group" id="machines">
+										<div class="col-md-3"><label for="selectMachine" class="control-label" id="itemType"><?php echo $workType; ?></label></div>
+										<div class="col-md-5" id="dropdown">
+											<select id="selectItem" name="selectItem" class="form-control" required>
+												<?php echo $item_list; ?>
+											</Select>
+										</div>
+										<div class="col-md-4 hidden" id="textOther">
+											<input type="text" class="form-control" id="inputOther" name="inputOther" value="<?php echo $other; ?>">
+										</div>
 									</div>
-								</div>
-								<div class="row form-group" id="priority">
-									<div class="col-md-3"><label for="selectPriority" class="control-label">Priority</label></div>
-									<div class="col-md-4"><select id="selectPriority" name="selectPriority" class="form-control">
-										<?php
-											echo $priorityLevel;
-										?>
-									</Select></div>
-								</div>
-								<div class="row form-group" id="description">
-									<div class="col-md-3"><label for="textDescription" class="control-label">Description</label></div>
-									<div class="col-md-9"><textarea class="form-control" name="textDescription" id="textDescription" rows="2" required><?php echo $description; ?></textarea></div>
-								</div>
-								<div class="row form-group" id="requestBy">
-									<div class="col-md-3"><label for="selectRequestBy" class="control-label">Request By</label></div>
-									<div class="col-md-4">
-										<select id="selectRequestBy" name="selectRequestBy" class="form-control" required>
+									<div class="row form-group" id="priority">
+										<div class="col-md-3"><label for="selectPriority" class="control-label">Priority</label></div>
+										<div class="col-md-4"><select id="selectPriority" name="selectPriority" class="form-control">
 											<?php
-												echo $selectUser;
+												echo $priorityLevel;
 											?>
-										</Select>
+										</Select></div>
+									</div>
+									<div class="row form-group" id="description">
+										<div class="col-md-3"><label for="textDescription" class="control-label">Description</label></div>
+										<div class="col-md-9"><textarea class="form-control" name="textDescription" id="textDescription" rows="2" required><?php echo $description; ?></textarea></div>
+									</div>
+									<div class="row form-group" id="requestBy">
+										<div class="col-md-3"><label for="selectRequestBy" class="control-label">Request By</label></div>
+										<div class="col-md-4">
+											<select id="selectRequestBy" name="selectRequestBy" class="form-control" required>
+												<?php
+													echo $selectUser;
+												?>
+											</Select>
+										</div>
 									</div>
 								</div>
-							</div>
-							<div class="modal-footer">
-								<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-								<button type="button" class="btn btn-primary">Save changes</button>
-							</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+									<button type="button" class="btn btn-primary">Save changes</button>
+								</div>
+							</form>
 						</div>
 					</div>
 				</div>
@@ -573,89 +562,98 @@ include '../includes/navbar.php';
 						<div class="modal-content">
 							<div class="modal-header">
 								<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-								<h4 class="modal-title" id="requestModalLabel">Edit Approval Information</h4>
+								<h4 class="modal-title" id="approveModalLabel">Edit Approval Information</h4>
 							</div>
-							<div class="modal-body">
-								<div class="row form-group" id="completeBy">
-									<div class="col-md-3"><label for="inputcompleteBy">Complete By</label></div>
-									<div class="col-md-4"><input class="form-control" type="text" id="from" name="from" value="<?php echo $dueDateLong; ?>"></div>
-								</div>
-								<div class="row form-group" id="estimatedTime">
-									<div class="col-md-3"><label for="inputEstimatedTime">Estimated time</label></div>
-									<div class="col-xs-2" id="inputDays"><input class="form-control" type="text" id="inputEstimatedTimeDays" name="inputEstimatedTimeDays" value="<?php echo $days; ?>">Days</div>
-									<div class="col-xs-2" id="inputHours"><input class="form-control" type="text" id="inputEstimatedTimeHrs" name="inputEstimatedTimeHrs" value="<?php echo $hrs; ?>">Hrs</div>
-									<div class="col-xs-2" id="inputMinutes"><input class="form-control" type="text" min="0" id="inputEstimatedTimeMin" name="inputEstimatedTimeMin" value="<?php echo $mins; ?>">Mins</div>
-								</div>
-								<div class="row form-group" id="assignTo">
-									<div class="col-md-3"><label for="Checkbox">Assigned to</label></div>
-									<div class="col-md-4">
-										<?php echo $checkbox_list; echo $otherCheckbox;?>
-										
+							<form>
+								<div class="modal-body">
+									<div class="row form-group" id="completeBy">
+										<div class="col-md-3"><label for="inputcompleteBy">Complete By</label></div>
+										<div class="col-md-4"><input class="form-control" type="text" id="from" name="from" value="<?php echo $dueDateLong; ?>"></div>
 									</div>
-									<div class="col-md-4" id="assignOther">
-										<select id="selectOther" name="selectOther" class="form-control ">
-											<option value="0">-- Choose User --</option>
-											<?php
-												echo $assignUser;
-											?>
-										</Select>
+									<div class="row form-group" id="estimatedTime">
+										<div class="col-md-3"><label for="inputEstimatedTime">Estimated time</label></div>
+										<div class="col-xs-2" id="inputDays"><input class="form-control" type="text" id="inputEstimatedTimeDays" name="inputEstimatedTimeDays" value="<?php echo $days; ?>">Days</div>
+										<div class="col-xs-2" id="inputHours"><input class="form-control" type="text" id="inputEstimatedTimeHrs" name="inputEstimatedTimeHrs" value="<?php echo $hrs; ?>">Hrs</div>
+										<div class="col-xs-2" id="inputMinutes"><input class="form-control" type="text" min="0" id="inputEstimatedTimeMin" name="inputEstimatedTimeMin" value="<?php echo $mins; ?>">Mins</div>
+									</div>
+									<div class="row form-group" id="assignTo">
+										<div class="col-md-3"><label for="Checkbox">Assigned to</label></div>
+										<div class="col-md-4">
+											<?php echo $checkbox_list; echo $otherCheckbox;?>
+											
+										</div>
+										<div class="col-md-4" id="assignOther">
+											<select id="selectOther" name="selectOther" class="form-control ">
+												<option value="0">-- Choose User --</option>
+												<?php
+													echo $assignUser;
+												?>
+											</Select>
+										</div>
+									</div>
+									<div class="row form-group" id="notes">
+										<div class="col-md-3"><label for="textNotes">Notes</label></div>
+										<div class="col-md-9"><textarea class="form-control" name="textNotes" id="textNotes" rows="3"><?php echo $notes; ?></textarea></div>
 									</div>
 								</div>
-								<div class="row form-group" id="notes">
-									<div class="col-md-3"><label for="textNotes">Notes</label></div>
-									<div class="col-md-9"><textarea class="form-control" name="textNotes" id="textNotes" rows="3"><?php echo $notes; ?></textarea></div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+									<button type="button" class="btn btn-primary">Save changes</button>
 								</div>
-							</div>
-							<div class="modal-footer">
-								<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-								<button type="button" class="btn btn-primary">Save changes</button>
-							</div>
+							</form>
 						</div>
 					</div>
 				</div>
-				<!-- Approve Modal -->
+				<!-- Information Modal -->
 				<div class="modal fade" id="dataModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 					<div class="modal-dialog">
 						<div class="modal-content">
 							<div class="modal-header">
 								<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-								<h4 class="modal-title" id="requestModalLabel">Edit Data Information</h4>
+								<h4 class="modal-title" id="infoModalLabel">Edit Data Information</h4>
 							</div>
-							<div class="modal-body">
-								...
-							</div>
-							<div class="modal-footer">
-								<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-								<button type="button" class="btn btn-primary">Save changes</button>
-							</div>
+							<form>
+								<div class="modal-body">
+									...
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+									<button type="button" class="btn btn-primary">Save changes</button>
+								</div>
+							</form>
 						</div>
 					</div>
 				</div>
-				<!-- Approve Modal -->
+				<!-- Work Summary Modal -->
 				<div class="modal fade" id="descriptionModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 					<div class="modal-dialog">
 						<div class="modal-content">
 							<div class="modal-header">
 								<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-								<h4 class="modal-title" id="requestModalLabel">Edit Work Summary</h4>
+								<h4 class="modal-title" id="worktModalLabel">Edit Work Summary</h4>
 							</div>
-							<div class="modal-body">
-								...
-							</div>
-							<div class="modal-footer">
-								<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-								<button type="button" class="btn btn-primary">Save changes</button>
-							</div>
+							<form>
+								<div class="modal-body">
+									<div class="row form-group" id="work_done">
+										<div class="col-md-3"><label for="workDone">Work Done:</label></div>
+										<div class="col-md-8"><textarea class="form-control" name="workDone" id="workDone" rows="9"><?php echo $workDone; ?></textarea></div>
+									</div>
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+									<button type="button" class="btn btn-primary">Save changes</button>
+								</div>
+							</form>
 						</div>
 					</div>
 				</div>
-				<!-- Approve Modal -->
+				<!-- Work Hours Modal -->
 				<div class="modal fade" id="hoursModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 					<div class="modal-dialog">
 						<div class="modal-content">
 							<div class="modal-header">
 								<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-								<h4 class="modal-title" id="requestModalLabel">Edit Work Hours</h4>
+								<h4 class="modal-title" id="hourstModalLabel">Edit Work Hours</h4>
 							</div>
 							<div class="modal-body">
 								...
@@ -686,9 +684,18 @@ include '../includes/navbar.php';
 		/*$(document).idleTimeout({ 
 			inactivity: 10000, noconfirm: 10000, sessionAlive: 10000 
 		});*/
-		var startRunner = <?php echo $startRunner; ?>;
+		
 		var itemType = <?php echo $workTypeId; ?>;
 		var selectOtherChecked = <?php echo $checkedOther; ?>;
+		//Start all the runners for work in progress when the page loads
+		var startRunner = <?php echo json_encode($startRunner); ?>;
+		$.each(startRunner, function(i,runner) {
+			$("#runner-" + runner.user).runner({
+				startAt: runner.elapsed_time*1000, 
+				milliseconds: false
+			});
+			$("#runner-" + runner.user).runner('start');
+		});
 		
 		if(itemType == 5){
 			$('#selectItem').removeAttr("required");
@@ -712,7 +719,7 @@ include '../includes/navbar.php';
 			$('#selectItem').empty();
 			$("#dropdown").removeClass("hidden");
 			$("#textOther").addClass("hidden");
-			$('#selectItem').addAttr("required");
+			//$('#selectItem').addAttr("required");
 			var optionValue = $( "#selectRequestType" ).val();
 			if (optionValue > 0){
 				if(optionValue == 1){
@@ -861,58 +868,74 @@ include '../includes/navbar.php';
 				$("#inputHours").removeClass("has-error");
 			}
 		});
-		if(startRunner > 0){
-			$("#runner").runner({
-				startAt: startRunner*1000, 
-				milliseconds: false
-			});
-			$("#runner").runner('start');
-		}else{
-			$('#runner').runner({
-				milliseconds: false
-			});
-		};
-		$( "#do_action" ).on( "click", "[id^=startTimer-]", function() {
+		
+		$( ".do_action" ).on( "click", "[id^=startTimer-]", function() {
 			var buttonId = this.id;
 			var arr = buttonId.split('-');
 			buttonId = arr[1];
-			$('#runner').runner('start');
+			var d = new Date(); // for now
+			var year = ('0' + d.getFullYear()).slice(-2);
+			var month = d.getMonth() + 1;
+			var day = d.getDay();
+			var hours = d.getHours();
+			var mins = ('0' + d.getMinutes()).slice(-2);
+			var currentTime = hours + ":" + mins;
+			
+			var newCol = "<div class=\"col-md-2\"><div class=\"row\">" + month + "/" + day + "/" + year + "</div><div class=\"row\" id=\"startTime-" + buttonId + "\">" + currentTime + "</div><div class=\"row\" id=\"stopTime-" + buttonId + "\">&nbsp;</div><div class=\"row\" id=\"runner-" + buttonId + "\"></div></div>";
+			$(".newCol").after($(newCol));
+			$("#startTime-" + buttonId).html(currentTime);
+			$("#runner-" + buttonId).runner({
+				milliseconds: false
+			});
+			$("#runner-" + buttonId).runner('start');
 			var action_button = "<button id=\"stopTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-danger btn-xs\">Stop</button>";
-			$("#do_action").html(action_button);
+			$(".do_action").html(action_button);
 			var d = new Date(); // for now
 			var hours = d.getHours(); // => 9
-			var mins = d.getMinutes(); // =>  30
+			var mins = ('0' + d.getMinutes()).slice(-2); // =>  30
 			var currentTime = hours + ":" + mins;
-			$("#startTime").html(currentTime);
-			var request = $.getJSON("ajax/startwork.php", {id : workOrderId, user : user_id}, function(data) {
+			$("#startTime-" + buttonId).html(currentTime);
+			var request = $.getJSON("../ajax/startwork.php", {id : workOrderId, user : user_id}, function(data) {
 				console.log(data);
+				
 				
 			});
 		});
 		
-		$( "#do_action" ).on( "click", "[id^=stopTimer-]", function() {
+		$( ".do_action" ).on( "click", "[id^=stopTimer-]", function() {
 			var buttonId = this.id;
 			var buttonId = this.id;
 			var arr = buttonId.split('-');
 			buttonId = arr[1];
-			$("#runner").runner('stop');
-			var action_button = "<button id=\"resetTimer\" type=\"button\" class=\"btn btn-warning btn-xs\">Reset</button>  <button id=\"doneTimer\"type=\"button\" class=\"btn btn-primary btn-xs\">Done</button>";
-			$("#do_action").html(action_button);
+			$("#runner-" + buttonId).runner('stop');
+			var action_button = "<button id=\"startTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-success btn-xs\">Start</button>";
+			$(".do_action").html(action_button);
 			var d = new Date(); // for now
-			var hours = d.getHours(); // => 9
-			var mins = d.getMinutes(); // =>  30
+			var hours = d.getHours();
+			var mins = ('0' + d.getMinutes()).slice(-2);
 			var currentTime = hours + ":" + mins;
-			$("#stopTime").html(currentTime);
-			/*
-			var request = $.getJSON("ajax/updatetimes.php", {id : partId, machine : buttonId}, function(data) {
+			$("#stopTime-" + buttonId).html(currentTime);
+			var request = $.getJSON("../ajax/stopwork.php", {id : workOrderId, user : user_id}, function(data) {
 				console.log(data);
+				//alert(data[0].total_time);
+				var a = "<small>" + data[0].total_time + "</small>";
+				$("#totalHours").html(a);
 				
-			});*/
+			});
 		});
-		$("#assignment").on("click", "[id]", function(event) {
+
+		////Click tab
+		$( ".assignmentTab" ).on( "click", "[id^=worker-]", function() {
 			var workerId = this.id;
+			var arr = workerId.split('-');
+			workerId = arr[1];
+			var request = $.getJSON("../ajax/getWork.php", {userid : workerId, wo : workOrderId}, function(data) {
+				console.log(data);
+				//$("#workDone").html(data[0].work_done);
+			});
 			
 		});
+		
 	});
 </script>
 </body>

@@ -156,4 +156,12 @@ tr.shown td.details-control {
 	margin-left: 20px;
 }
 
+.rWellPadding{
+	padding-right: 30px;
+}
+
+.lWellPadding{
+	padding-left: 30px;
+}
+
 

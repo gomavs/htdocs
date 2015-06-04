@@ -1,7 +1,7 @@
 <?php
 require '../includes/check_login.php';
 
-if (isset( $_POST[ 'submit' ] ) ) {
+if(isset($_POST['submit'])){
 	//echo "test";
 	$firstname = $_POST['firstname'];
 	$lastname = $_POST['lastname'];

@@ -108,9 +108,9 @@ include '../includes/navbar.php';
 				{ "data": "Priority", "sWidth": "10%"},
 				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
 					if( authWO >= 3){
-						return '<a class="btn btn-info btn-sm" href=workorder.php?view=' + data.id + '>' + 'View' + '</a>';
+						return '<a class="btn btn-info btn-sm" href=workorder.php?id=' + data.id + '>' + 'View' + '</a>';
 					}else{
-						return '<a class="btn btn-info btn-sm disabled" href=workorder.php?view=' + data.id + '>' + 'View' + '</a>';
+						return '<a class="btn btn-info btn-sm disabled" href=workorder.php?id=' + data.id + '>' + 'View' + '</a>';
 					}
 				}},
 			],
