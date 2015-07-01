@@ -29,11 +29,8 @@ if (isset( $_POST[ 'submit' ] ) ) {
 		$query = $db->prepare("UPDATE workcenter SET inservice = ?, name = ?, type = ?, center = ?, make = ?, model = ?, serial = ?, year = ? WHERE id = ?");
 		$query->bind_param("isiissssi", $active, $machineName, $type, $workCenter, $make, $model, $serial, $year, $id);
 		$query->execute();
-	} else {
-		mysqli_query($db,"INSERT INTO workcenter (inservice, name, type, center, make, model, serial, year)
-	VALUES ('$active', '$machineName','$type', '$workCenter', '$make', '$model', '$serial', '$year')");
 	}
-	header("location:machines.php");
+	//header("location:machines.php");
 }
 ?>
 <!DOCTYPE html>
@@ -154,7 +151,7 @@ include '../includes/navbar.php';
 			if (optionValue > 0){
 				$("form").removeClass("hidden");
 					
-				var request = $.get("../ajax/getmachine.php", {id : optionValue}, function(data) {
+				var request = $.get("../ajax/updatemachines.php", {id : optionValue}, function(data) {
 					console.log(data);
 					populate($("#editMachine"), $.parseJSON(data));
 				});

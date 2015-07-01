@@ -1,7 +1,7 @@
 <?php
 require_once("../includes/dbConnect.php");
 $data = [];
-$query = $db->prepare("SELECT * FROM toolstype ORDER BY item ASC");
+$query = $db->prepare("SELECT * FROM toolstype WHERE active = 1 ORDER BY item ASC");
 $query->execute();
 $result = $query->get_result();
 while (($row = $result->fetch_object()) !== NULL) {

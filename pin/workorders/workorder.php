@@ -38,8 +38,8 @@ if(isset($_GET['id'])){
 	$row = $result->fetch_assoc();
 	$workRequestId = $row['workRequestId'];
 	$startDate = $row['startDate'];
-	$dueDate = date("N/j/y"  ,$row['dueDate']);
-	$dueDateLong = date("M d, Y"  ,$row['dueDate']);
+	$dueDate = date("n/j/y", $row['dueDate']);
+	$dueDateLong = date("M d, Y", $row['dueDate']);
 	$endDate = $row['endDate'];
 	$timeEstimate = secondsToTime($row['timeEstimate']);
 	list($days, $hrs, $mins) = explode(",", $timeEstimate);
@@ -58,7 +58,9 @@ if(isset($_GET['id'])){
 	$requestedBy = $row['requestedBy'];
 	$other = $row['other'];
 	$approvedBy = $row['approvedBy'];
-	$addRow = "";
+	$hidden = "hidden";
+	$machine_name = "";
+	$serial = "";
 	$item_list = "";
 	$workItem = "Item:";
 	//Request type Select Dropdown
@@ -83,7 +85,9 @@ if(isset($_GET['id'])){
 		while (($row = $result->fetch_object()) !== NULL) {
 			if($row->id == $itemId){
 				$workCenter = $row->center;
-				$addRow = "<div class=\"col-md-3\"><label>Machine:</label></div><div class=\"col-md-3\"><small>". $row->name ."</small></div><div class=\"col-md-3\"><label>Serial #:</label></div><div class=\"col-md-3\"><small>". $row->serial ."</small></div>";
+				$hidden = "";
+				$machine_name = $row->name;
+				$serial = $row->serial;
 				$item_list = $item_list."<option value=\"".$row->id."\" selected>Center ".$row->center."&nbsp;&nbsp;".$row->name."</option>";
 			}else{
 				$item_list = $item_list."<option value=\"".$row->id."\">Center".$row->center."&nbsp;&nbsp;".$row->name."</option>";
@@ -91,8 +95,7 @@ if(isset($_GET['id'])){
 		}
 	}elseif($workTypeId == 2){
 		$workType = "Facility";
-		$workItem = "Item:";
-		$query = $db->prepare("SELECT * FROM facilitytype ORDER BY id ASC");
+		$query = $db->prepare("SELECT * FROM facilitytype WHERE active = 1 ORDER BY id ASC");
 		$query->execute();
 		$result = $query->get_result();
 		while (($row = $result->fetch_object()) !== NULL) {
@@ -105,7 +108,7 @@ if(isset($_GET['id'])){
 		}
 	}elseif($workTypeId == 3){
 		$workType = "Safety";
-		$query = $db->prepare("SELECT * FROM safetytype ORDER BY id ASC");
+		$query = $db->prepare("SELECT * FROM safetytype WHERE active = 1 ORDER BY id ASC");
 		$query->execute();
 		$result = $query->get_result();
 		while (($row = $result->fetch_object()) !== NULL) {
@@ -119,7 +122,7 @@ if(isset($_GET['id'])){
 	}elseif($workTypeId == 4){
 		$workType = "Tools";
 		$item_list = "";
-		$query = $db->prepare("SELECT * FROM toolstype ORDER BY id ASC");
+		$query = $db->prepare("SELECT * FROM toolstype WHERE active = 1 ORDER BY id ASC");
 		$query->execute();
 		$result = $query->get_result();
 		while (($row = $result->fetch_object()) !== NULL) {
@@ -133,8 +136,6 @@ if(isset($_GET['id'])){
 	}elseif($workTypeId == 5){
 		$workType = "Other";
 		$workCenter = $other;
-	}else{
-		
 	}
 	// Requested By
 	$query = $db->prepare("SELECT firstname, lastname FROM users WHERE id = ?");
@@ -209,6 +210,7 @@ if(isset($_GET['id'])){
 	$result = $query->get_result();
 	while (($row = $result->fetch_object()) !== NULL) {
 		$userId = $row->assignedTo;
+		$workStatus = $row->status;
 		$lastTime = "";
 		$newColumn = "";
 		$actionButton = "";
@@ -217,22 +219,28 @@ if(isset($_GET['id'])){
 		$myForm = "";
 		$myFormClose = "";
 		$workName = "";
+		$finishButton = "";
+		$hideButtons = "";
 		$workDone = $row->workDone;
 		$query1 = $db->prepare("SELECT firstname, lastname FROM users WHERE id = ?");
 		$query1->bind_param("i", $row->assignedTo);
 		$query1->execute();
 		$result1 = $query1->get_result();
 		$row1 = $result1->fetch_assoc();
-		$assignedJob = $assignedJob."<div class=\"row\"><div class=\"col-md-5\">".$row1['firstname']." ".$row1['lastname']."</div></div>";
+		$assignedJob = $assignedJob."<div class=\"row\"><div class=\"col-md-5\"><small>".$row1['firstname']." ".$row1['lastname']."</small></div></div>";
 		$assignedTechs[] = $row->assignedTo;
 		if($row->status == 0){
 			$workCompleted = "No";
 		}
+		if($workStatus == 1){
+			$hideButtons = "hidden";
+		}
 		$paneActive = "";
 		if($userActive == 1){
 			if($_SESSION['user_id'] == $userId){
-				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab active\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab tab-".$userId." active\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
 				$startButton = "<button id=\"startTimer-".$userId."\" type=\"button\" class=\"btn btn-success btn-xs\">Start</button>";
+				$finishButton = "<button id=\"workCompleted\" type=\"button\" class=\"btn btn-primary btn-sm\">Work Completed</button>";
 				$paneActive = "active";
 				$newColumn = "newCol";
 				$actionButton = "do_action";
@@ -243,21 +251,28 @@ if(isset($_GET['id'])){
 				$workButton = "<button type=\"submit\" name=\"workDone\" formmethod=\"post\" class=\"btn btn-primary btn-sm\">Post Work</button>";
 				
 			}else{
-				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab tab-".$userId."\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
 				$startButton = "<button id=\"startTimer-".$userId."\" type=\"button\" class=\"btn btn-success btn-xs\" disabled>Start</button>";
 			}
 		}else{
 			if($i == 1){
-				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab active\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab tab-".$userId." active\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
 				$startButton = "<button id=\"startTimer-".$userId."\" type=\"button\" class=\"btn btn-success btn-xs\" disabled>Start</button>";
 				$paneActive = "active";
 			}else{
-				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
+				$assignmentTab = $assignmentTab. "<li class=\"assignmentTab tab-".$userId."\"><a href=\"#".$userId."\" data-toggle=\"tab\" id=\"worker-".$userId."\">".$row1['firstname']." ".$row1['lastname']."</a></li>";
 				$startButton = "<button id=\"startTimer-".$userId."\" type=\"button\" class=\"btn btn-success btn-xs\" disabled>Start</button>";
 			}
 		}
-		$topPane = "<div class=\"tab-pane ".$paneActive."\" id=\"".$userId."\"><div class=\"row col-md-12 spacer\">".$myForm."<div class=\"col-md-6 rWellPadding\"><div class=\"row\"><div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-2\"><label>Work Done:</label></div><div class=\"col-md-8\"><textarea class=\"form-control\"".$workName." id=\"workDone\" rows=\"8\" ".$myWork.">".$workDone."</textarea></div><div class=\"col-md-2\">".$workButton."</div></div></div></div></div>".$myFormClose."<div class=\"col-md-6 lWellPadding\" ><div class=\"row\"><div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-1 col-md-offset-11\"><button type=\"button\" class=\"btn btn-default btn-sm\" data-toggle=\"modal\" data-target=\"#hoursModal\" aria-label=\"Edit\"><span class=\"glyphicon glyphicon-pencil\" aria-hidden=\"true\"></span></button></div></div><div class=\"row row-horizon LbtnMargin RbtnMargin spacer\"><div class=\"col-md-3 ". $newColumn ."\"><div class=\"row\"><b>Date</b></div><div class=\"row\"><b>Start Time</b></div><div class=\"row\"><b>Stop Time</b></div><div class=\"row\"><b>Total Time</b></div></div>";
-
+		$topPane = "<div class=\"tab-pane pane-".$userId." ".$paneActive."\" id=\"".$userId."\"><div class=\"row col-md-12 spacer\">".$myForm."<div class=\"col-md-6 rWellPadding\">";
+		$topPane .= "<div class=\"row\"><div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-2\"><label>Work Done:</label></div><div class=\"col-md-8\">";
+		$topPane .= "<textarea class=\"form-control\"".$workName." id=\"workDone\" rows=\"8\" ".$myWork.">".$workDone."</textarea></div>";
+		$topPane .= "<div class=\"col-md-2\">".$workButton."</div></div></div></div></div>".$myFormClose."<div class=\"col-md-6 lWellPadding\" ><div class=\"row\">";
+		$topPane .= "<div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-1 col-md-offset-11\">";
+		$topPane .= "<button type=\"button\" class=\"btn btn-default btn-sm\" data-toggle=\"modal\" data-target=\"#hoursModal\" aria-label=\"Edit\">";
+		$topPane .= "<span class=\"glyphicon glyphicon-pencil\" aria-hidden=\"true\"></span></button></div></div><div class=\"row row-horizon LbtnMargin RbtnMargin spacer\">";
+		$topPane .= "<div class=\"col-md-3 ". $newColumn ."\"><div class=\"row\"><b>Date</b></div><div class=\"row\"><b>Start Time</b></div>";
+		$topPane .= "<div class=\"row\"><b>Stop Time</b></div><div class=\"row\"><b>Total Time</b></div></div>";
 		$query2 = $db->prepare("SELECT * FROM worktimes WHERE userId = ? AND workOrderId = ? ORDER BY startTime DESC");
 		$query2->bind_param("ii", $userId, $workOrderId);
 		$query2->execute();
@@ -290,23 +305,10 @@ if(isset($_GET['id'])){
 				$lastTime = $lastTime."<div class=\"col-md-2\"><div class=\"row\">".$lastDate."</div><div class=\"row\">".$lastStart."</div><div class=\"row\">".$lastStop."</div><div class=\"row\">".$elapsedTime."</div></div>";
 			}
 		}
-		$completePane = $completePane.$topPane.$lastTime."</div></div></div><div class=\"row\"><div class=\"col-md-2 ".$actionButton."\">". $startButton ."</div></div></div></div><div class=\"row col-md-12 spacer\"><div class=\"col-md-6 rWellPadding\"><div class=\"row\"><div class=\"well well-sm\">test</div></div></div></div></div>";
+		$completePane = $completePane.$topPane.$lastTime."</div></div></div><div class=\"row complete_work ".$hideButtons."\"><div class=\"col-md-2 ".$actionButton."\">". $startButton ."</div><div class=\"col-md-2 col-md-offset-8\">". $finishButton ."</div></div></div></div>";
+		$completePane .= "<div class=\"row col-md-12 spacer\"><div class=\"col-md-6 rWellPadding\"><div class=\"row\"><div class=\"well well-sm\">For Future Use</div></div></div></div></div>";
+		 
 		$i++;
-	}
-	
-	// checked Technicians
-	$query = $db->prepare("SELECT * FROM users WHERE department = 600 ORDER BY firstname ASC");
-	$query->execute();
-	$result = $query->get_result();
-	$checkbox_list = "";
-	$availableTechs = array();
-	while (($row = $result->fetch_object()) !== NULL) {
-		if(in_array($row->id, $assignedTechs)){
-			$checkbox_list = $checkbox_list."<div class=\"checkbox\"><label><input type=\"checkbox\" name=\"check_list[]\" value=\"".$row->id."\" checked>".$row->firstname." ".$row->lastname."</label></div>";
-		}else{
-			$checkbox_list = $checkbox_list."<div class=\"checkbox\"><label><input type=\"checkbox\" name=\"check_list[]\" value=\"".$row->id."\">".$row->firstname." ".$row->lastname."</label></div>";
-		}
-		$availableTechs[] = $row->id;
 	}
 	// checked other
 	$checkedOther = 0;
@@ -398,18 +400,18 @@ include '../includes/navbar.php';
 								</div>
 								<div class="row">
 									<div class="col-md-3"><label>Type:</label></div>
-									<div class="col-md-7"><small><?php echo $workType; ?></small></div>
+									<div class="col-md-7" id="workType"><small><?php echo $workType; ?></small></div>
 								</div>
 								<div class="row">
-									<div class="col-md-3"><label><?php echo $workItem; ?></label></div>
-									<div class="col-md-2"><small><?php echo $workCenter; ?></small></div>
+									<div class="col-md-3" id="item_type"><label><?php echo $workItem; ?></label></div>
+									<div class="col-md-7" id="item_name"><small><?php echo $workCenter; ?></small></div>
 								</div>
-								<div class="row">
-									<?php echo $addRow; ?>
+								<div class="row <?php echo $hidden; ?>" id="hidden_row">
+									<div class="col-md-3"><label>Machine:</label></div><div class="col-md-3" id="machine_name"><small><?php echo $machine_name; ?></small></div><div class="col-md-3"><label>Serial #:</label></div><div class="col-md-3" id="serial_number"><small><?php echo $serial; ?></small></div>
 								</div>
 								<div class="row">
 									<div class="col-md-3"><label>Priority:</label></div>
-									<div class="col-md-2"><small><?php echo $priorityLabel; ?></small></div>
+									<div class="col-md-2" id="priority_level"><small><?php echo $priorityLabel; ?></small></div>
 								</div>
 								<div class="row">
 									<div class="col-md-3"><label>Problem:</label></div>
@@ -417,7 +419,7 @@ include '../includes/navbar.php';
 								</div>
 								<div class="row">
 									<div class="col-md-3"><label>Request By:</label></div>
-									<div class="col-md-3"><small><?php echo $requesterName; ?></small></div>
+									<div class="col-md-3" id="request_by"><small><?php echo $requesterName; ?></small></div>
 									<div class="col-md-3"><label>Date:</label></div>
 									<div class="col-md-3"><small><?php echo $requestDate ?></small></div>
 								</div>
@@ -436,21 +438,17 @@ include '../includes/navbar.php';
 								</div>
 								<div class="row">
 									<div class="col-md-3"><label>Due Date:</label></div>
-									<div class="col-md-3"><small><?php echo $dueDate; ?></small></div>
+									<div class="col-md-3" id="due_date"><small><?php echo $dueDate; ?></small></div>
 									<div class="col-md-3"><label>Esitmated Time:</label></div>
-									<div class="col-md-3"><small><?php echo $days." Days ".$hrs. " Hrs ".$mins." Mins"; ?></small></div>
+									<div class="col-md-3" id="estimated_time"><small><?php echo $days." Days ".$hrs. " Hrs ".$mins." Mins"; ?></small></div>
 								</div>
 								<div class="row">
 									<div class="col-md-3"><label>Assigned to:</label></div>
-									<div class="col-md-9">
-										<small>
-											<?php echo $assignedJob; ?>
-										</small>
-									</div>
+									<div class="col-md-9" id="assigned_job"><div class="assignment"><?php echo $assignedJob; ?></div></div>
 								</div>
 								<div class="row">
 									<div class="col-md-3"><label>Notes:</label></div>
-									<div class="col-md-9"><textarea class="form-control" name="textDescription" id="textDescription" rows="2" disabled><?php echo $notes; ?></textarea></div>
+									<div class="col-md-9"><textarea class="form-control" name="approval_notes" id="approval_notes" rows="2" disabled><?php echo $notes; ?></textarea></div>
 								</div>
 								<div class="row">
 									<div class="col-md-3"><label>Approved By:</label></div>
@@ -495,8 +493,9 @@ include '../includes/navbar.php';
 							<?php echo $assignmentTab; ?>
 						</ul>
 						<div class="tab-content ">
+							<!--Start Pane generation -->
 							<?php echo $completePane; ?>
-							
+							<!-- end Pane generation -->
 						</div>
 					</div>
 				</div>
@@ -508,8 +507,9 @@ include '../includes/navbar.php';
 								<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
 								<h4 class="modal-title" id="requestModalLabel">Edit Request Information</h4>
 							</div>
-							<form>
-								<div class="modal-body form-group">
+							<div class="modal-body form-group">
+								<form class="requestInfo" name="requestInfo">
+									<input type="hidden" name="requestId" value="<?php echo $workRequestId; ?>">
 									<div class="row form-group">
 										<div class="col-md-3"><label for="selectRequestType" class="control-label">Request Type</label></div>
 										<div class="col-md-4"><select id="selectRequestType" name="selectRequestType" class="form-control" required><option value="0">-- Choose Type --</option><?php echo $type_list; ?></select></div>
@@ -547,12 +547,12 @@ include '../includes/navbar.php';
 											</Select>
 										</div>
 									</div>
-								</div>
-								<div class="modal-footer">
-									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-									<button type="button" class="btn btn-primary">Save changes</button>
-								</div>
-							</form>
+								</form>
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+								<input class="btn btn-primary" type="submit" value="Save Changes" id="request">
+							</div>
 						</div>
 					</div>
 				</div>
@@ -564,43 +564,68 @@ include '../includes/navbar.php';
 								<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
 								<h4 class="modal-title" id="approveModalLabel">Edit Approval Information</h4>
 							</div>
-							<form>
-								<div class="modal-body">
-									<div class="row form-group" id="completeBy">
-										<div class="col-md-3"><label for="inputcompleteBy">Complete By</label></div>
-										<div class="col-md-4"><input class="form-control" type="text" id="from" name="from" value="<?php echo $dueDateLong; ?>"></div>
-									</div>
-									<div class="row form-group" id="estimatedTime">
-										<div class="col-md-3"><label for="inputEstimatedTime">Estimated time</label></div>
-										<div class="col-xs-2" id="inputDays"><input class="form-control" type="text" id="inputEstimatedTimeDays" name="inputEstimatedTimeDays" value="<?php echo $days; ?>">Days</div>
-										<div class="col-xs-2" id="inputHours"><input class="form-control" type="text" id="inputEstimatedTimeHrs" name="inputEstimatedTimeHrs" value="<?php echo $hrs; ?>">Hrs</div>
-										<div class="col-xs-2" id="inputMinutes"><input class="form-control" type="text" min="0" id="inputEstimatedTimeMin" name="inputEstimatedTimeMin" value="<?php echo $mins; ?>">Mins</div>
-									</div>
-									<div class="row form-group" id="assignTo">
-										<div class="col-md-3"><label for="Checkbox">Assigned to</label></div>
-										<div class="col-md-4">
-											<?php echo $checkbox_list; echo $otherCheckbox;?>
+							<div class="modal-body form-group">
+								<form class="approveInfo" name="approveInfo">
+									<input type="hidden" name="workOrderId" value="<?php echo $workOrderId; ?>">
+									<div class="modal-body">
+										<div class="row form-group" id="completeBy">
+											<div class="col-md-3"><label for="inputcompleteBy">Complete By</label></div>
+											<div class="col-md-4"><input class="form-control" type="text" id="from" name="from" value="<?php echo $dueDateLong; ?>"></div>
+										</div>
+										<div class="row form-group" id="estimatedTime">
+											<div class="col-md-3"><label for="inputEstimatedTime">Estimated time</label></div>
+											<div class="col-xs-2" id="inputDays"><input class="form-control" type="text" id="inputEstimatedTimeDays" name="inputEstimatedTimeDays" value="<?php echo $days; ?>">Days</div>
+											<div class="col-xs-2" id="inputHours"><input class="form-control" type="text" id="inputEstimatedTimeHrs" name="inputEstimatedTimeHrs" value="<?php echo $hrs; ?>">Hrs</div>
+											<div class="col-xs-2" id="inputMinutes"><input class="form-control" type="text" min="0" id="inputEstimatedTimeMin" name="inputEstimatedTimeMin" value="<?php echo $mins; ?>">Mins</div>
+										</div>
+										<div class="row form-group" id="assignTo">
+											<div class="col-md-3"><label for="Checkbox">Assigned to</label></div>
+											<div class="col-md-4">
+											<?php
 											
-										</div>
-										<div class="col-md-4" id="assignOther">
-											<select id="selectOther" name="selectOther" class="form-control ">
-												<option value="0">-- Choose User --</option>
+												$query = $db->prepare("SELECT * FROM users WHERE department = 600 ORDER BY firstname ASC");
+												$query->execute();
+												$result = $query->get_result();
+												//$availableTechs = array();
+													$i = 1;
+												while (($row = $result->fetch_object()) !== NULL) {
+													if(in_array($row->id, $assignedTechs)){
+														
+											?>
+														<div class="checkbox"><label><input type="checkbox" name="check_list[]" value="<?php echo $row->id; ?>" checked><?php echo $row->firstname." ".$row->lastname; ?></label></div>
 												<?php
-													echo $assignUser;
-												?>
-											</Select>
+													}else{
+														
+												?>		
+														<div class="checkbox"><label><input type="checkbox" name="check_list[]" value="<?php echo $row->id; ?>"><?php echo $row->firstname." ".$row->lastname; ?></label></div>
+												<?php		
+													}
+												}
+											?>
+												<?php //echo $checkbox_list; 
+												echo $otherCheckbox;?>
+												
+											</div>
+											<div class="col-md-4" id="assignOther">
+												<select id="selectOther" name="selectOther" class="form-control ">
+													<option value="0">-- Choose User --</option>
+													<?php
+														echo $assignUser;
+													?>
+												</Select>
+											</div>
+										</div>
+										<div class="row form-group" id="notes">
+											<div class="col-md-3"><label for="textNotes">Notes</label></div>
+											<div class="col-md-9"><textarea class="form-control" name="textNotes" id="textNotes" rows="3"><?php echo $notes; ?></textarea></div>
 										</div>
 									</div>
-									<div class="row form-group" id="notes">
-										<div class="col-md-3"><label for="textNotes">Notes</label></div>
-										<div class="col-md-9"><textarea class="form-control" name="textNotes" id="textNotes" rows="3"><?php echo $notes; ?></textarea></div>
-									</div>
-								</div>
-								<div class="modal-footer">
-									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-									<button type="button" class="btn btn-primary">Save changes</button>
-								</div>
-							</form>
+								</form>
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+								<input type="submit" class="btn btn-primary"value="Save Changes" id="approve">
+							</div>
 						</div>
 					</div>
 				</div>
@@ -682,7 +707,7 @@ include '../includes/navbar.php';
 	window.user_id = <?php echo $_SESSION['user_id']; ?>;
 	$(document).ready(function(){
 		/*$(document).idleTimeout({ 
-			inactivity: 10000, noconfirm: 10000, sessionAlive: 10000 
+			inactivity: 10000, noconfirm: 5000, sessionAlive: 5000 
 		});*/
 		
 		var itemType = <?php echo $workTypeId; ?>;
@@ -923,17 +948,119 @@ include '../includes/navbar.php';
 				
 			});
 		});
-
-		////Click tab
-		$( ".assignmentTab" ).on( "click", "[id^=worker-]", function() {
-			var workerId = this.id;
-			var arr = workerId.split('-');
-			workerId = arr[1];
-			var request = $.getJSON("../ajax/getWork.php", {userid : workerId, wo : workOrderId}, function(data) {
-				console.log(data);
-				//$("#workDone").html(data[0].work_done);
+		//Submit modal request form
+		$("input#request").click(function(){
+			$.ajax({
+				type: "POST",
+				url: "../ajax/updaterequest.php",
+				data: $('form.requestInfo').serialize(),
+				success: function(data){
+					console.log(data);
+					$("#requestModal").modal('hide'); //hide popup
+					
+					data = jQuery.parseJSON(data);
+					$.each(data, function(key, value) {
+						$("#workType").html("<small>" + value.work_type + "</small>");
+						$("#item_type").html("<label>" + value.work_item + "</label>");
+						$("#item_name").html("<small>" + value.work_center + "</small>");
+						$("#priority_level").html("<small>" + value.priority + "</small>");
+						$("#machine_name").html("<small>" + value.item_name + "</small>");
+						$("#serial_number").html("<small>" + value.serial + "</small>");
+						$("#textDescription").html(value.work_done);
+						$("#request_by").html("<small>" + value.request_by + "</small>");
+						if(value.work_type == "Machine"){
+							$("#hidden_row").removeClass("hidden");
+						}else{
+							$("#hidden_row").addClass("hidden");
+						}
+						
+					});
+				},
+				error: function(){
+					alert("failure");
+				}
 			});
+		});
+		//Submit modal approval form
+		$("input#approve").click(function(){
+			$.ajax({
+				type: "POST",
+				url: "../ajax/updateapproval.php",
+				data: $('form.approveInfo').serialize(),
+				success: function(data){
+					console.log(data);
+					$("#approveModal").modal('hide'); //hide popup
+					data = jQuery.parseJSON(data);
+					$.each(data, function(key, value) {
+						$("#due_date").html("<small>" + value.due_date + "</small>");
+						$("#estimated_time").html("<small>" + value.estimated_time + "</small>");
+						$("#approval_notes").html(value.approval_notes);
+						$(".assignment").remove();
+						$("#assigned_job").append("<div class=\"assignment\"></div>");
+						$.each(value.selected_users, function(j, id){
+							//updated displayed users on work order
+							var a = "<div class=\"row\"><div class=\"col-md-5\"><small>" + id.firstname + " " + id.lastname + "</small></div></div>";
+							$(".assignment").append(a);
+						});
+						$.each(value.removed_users, function(j, id){
+							//removed tab and tab pane for removed users
+							$(".tab-"+ id).remove();
+							$(".pane-"+ id).remove();
+						});
+						$.each(value.added_users, function(j, added){
+							//adds tab and tab pane for added users
+							var workButton = "";
+							var startButton = "";
+							var finishButton = "";
+							var newColumn = "";
+							var disabled = "disabled";
+							var doAction = "";
+							var b = "<li class=\"assignmentTab tab-" + added.id + "\"><a href=\"#" + added.id + "\" data-toggle=\"tab\" id=\"worker-" + added.id + "\">" + added.firstname + " " + added.lastname + "</a></li>";
+							$(".nav-tabs").append(b);
+							if(user_id == added.id){
+								workButton = "<button type=\"submit\" name=\"workDone\" formmethod=\"post\" class=\"btn btn-primary btn-sm\">Post Work</button>";
+								startButton = "<button id=\"startTimer-" + added.id + "\" type=\"button\" class=\"btn btn-success btn-xs\">Start</button>";
+								finishButton = "<button id=\"workCompleted\" type=\"button\" class=\"btn btn-primary btn-sm\">Work Completed</button>";
+								newColumn = "newCol";
+								doAction = "do_action";
+								disabled = "";
+							}else{
+								startButton = "<button type=\"button\" class=\"btn btn-success btn-xs\" disabled>Start</button>";
+							}
+							var c = "<div class=\"tab-pane pane-" + added.id + "\" id=\"" + added.id + "\"><div class=\"row col-md-12 spacer\">" +
+								"<form role=\"form\" method=\"post\" id=\"work\"><div class=\"col-md-6 rWellPadding\"><div class=\"row\">" +
+								"<div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-2\"><label>Work Done:</label></div>" +
+								"<div class=\"col-md-8\"><textarea class=\"form-control\" id=\"workDone\" rows=\"8\" " + disabled + "></textarea></div>" +
+								"<div class=\"col-md-2\">" + workButton + "</div></div></div></div></div></form>" +
+								"<div class=\"col-md-6 lWellPadding\" ><div class=\"row\"><div class=\"well well-sm\"><div class=\"row\">" +
+								"<div class=\"col-md-1 col-md-offset-11\">" +
+								"<button type=\"button\" class=\"btn btn-default btn-sm\" data-toggle=\"modal\" data-target=\"#hoursModal\" aria-label=\"Edit\">" +
+								"<span class=\"glyphicon glyphicon-pencil\" aria-hidden=\"true\"></span></button></div></div>" +
+								"<div class=\"row row-horizon LbtnMargin RbtnMargin spacer\"><div class=\"col-md-3 " + newColumn + "\">" +
+								"<div class=\"row\"><b>Date</b></div><div class=\"row\"><b>Start Time</b></div><div class=\"row\"><b>Stop Time</b></div>" +
+								"<div class=\"row\"><b>Total Time</b></div></div></div></div></div><div class=\"row complete_work\">" +
+								"<div class=\"col-md-2 " + doAction + "\">" + startButton + "</div><div class=\"col-md-2 col-md-offset-8\">" + finishButton + "</div></div></div></div>" +
+								"<div class=\"row col-md-12 spacer\"><div class=\"col-md-6 rWellPadding\"><div class=\"row\">" +
+								"<div class=\"well well-sm\">For Future Use</div></div></div></div></div>";
+							
+							$(".tab-content").append(c);
+						});
+						
+					});
+				},
+				error: function(){
+					alert("failure");
+				}
+			});
+		});
+		//Complete work
+		$( ".complete_work" ).on( "click", "[id=workCompleted]", function() {
 			
+			var request = $.getJSON("../ajax/completework.php", {id : workOrderId, user : user_id}, function(data) {
+				console.log(data);
+				$(".complete_work").addClass("hidden");
+				
+			});
 		});
 		
 	});

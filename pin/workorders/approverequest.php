@@ -139,25 +139,26 @@ if(isset($_GET['id'])){
 			$assignUser = $assignUser."<option value=\"".$row->id."\">".$row->firstname." ".$row->lastname."</option>";
 		}
 	}
-	
-	
-	
 }
 if (isset( $_POST[ 'submit' ] ) ) {
 	$requestType = $_POST['requestType'];
 	$inputOther = "";
+	$workCenterId = "";
 	if($requestType == 5){
 		$selectItem = 0;
 		$inputOther = $_POST['inputOther'];
 	}else{
 		$selectItem = $_POST['selectItem'];
 	}
+	if($requestType == 1){
+		$workCenterId = $_POST['selectItem'];
+	}
 	$selectPriority = $_POST['selectPriority'];
 	$textDescription = $_POST['textDescription'];
 	$selectRequestBy = $_POST['selectRequestBy'];
 	$completeBy = strtotime($_POST['from']);
 	$estimatedTime = ($_POST['inputEstimatedTimeDays'] * 86400)+($_POST['inputEstimatedTimeHrs'] * 3600)+($_POST['inputEstimatedTimeMin'] * 60);
-	$textNotes = $_POST['textNotes'];
+	$textNotes = $db->real_escape_string($_POST['textNotes']);
 	
 	$date = new DateTime();
 	$timestamp = $date->getTimestamp();
@@ -169,10 +170,10 @@ if (isset( $_POST[ 'submit' ] ) ) {
 	$query->bind_param("iiisiisii", $requestType, $selectItem, $selectPriority, $textDescription, $selectRequestBy, $accepted, $inputOther, $approvedBy, $requestId);
 	$query->execute();
 	//Start a new work order
-	$query = "INSERT INTO workorder (workRequestId, startDate, dueDate, timeEstimate, notes, status) VALUES ('$requestId', '$timestamp', '$completeBy', '$estimatedTime', '$textNotes', '$status')";
+	$query = "INSERT INTO workorder (workRequestId, workCenterId, startDate, dueDate, timeEstimate, notes, status) VALUES ('$requestId', '$workCenterId', '$timestamp', '$completeBy', '$estimatedTime', '$textNotes', '$status')";
 	$db->query($query);
 	$workOrderId =  $db->insert_id;
-	echo $workOrderId;
+	//echo $workOrderId;
 	//Assign techs to the workorder
 	if(!empty($_POST['check_list'] )){
 		foreach($_POST['check_list'] as $check){

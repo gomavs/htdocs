@@ -105,8 +105,37 @@
 	margin-right: 10px;
 	margin-left: 10px;
 }
+
+table#clickableRow{
+	border-collapse: collapse;
+}
+
+#clickableRow tr {
+    
+  /* border-top: 1px solid #fff;*/
+}
+#clickableRow tr:hover {
+    background-color: #ccc;
+}
+#clickableRow th {
+    background-color: #fff;
+}
+#clickableRow th, #clickableRow td {
+    padding: 3px 5px;
+}
+#clickableRow td:hover {
+    cursor: pointer;
+}
+.highlight {
+	background-color: #ccc;
+}
+
 tr.clickableRow {
 	cursor: pointer;
+}
+
+.clickable tr:hover{
+	background-color: #ccc;
 }
 
 .panel-heading a:after {
@@ -156,12 +185,30 @@ tr.shown td.details-control {
 	margin-left: 20px;
 }
 
+.leftPush{
+	margin-left: 0px;
+}
+
 .rWellPadding{
 	padding-right: 30px;
 }
 
 .lWellPadding{
 	padding-left: 30px;
+}
+
+.well-error {
+background: #f2dede
+}
+.well-success {
+background: #dff0d8
+}
+.panel-max{
+    max-height: 420px;
+    overflow-y:scroll; 
+}
+.panel-fixed{
+	height: 420px;
 }
 
 

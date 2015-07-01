@@ -2,7 +2,7 @@
 require_once("../includes/dbConnect.php");
 $data = [];
 //Pull open work orders
-$query = $db->prepare("SELECT * FROM workorder WHERE status = 0 ORDER BY id ASC");
+$query = $db->prepare("SELECT * FROM workorder WHERE status = 1 ORDER BY id ASC");
 $query->execute();
 $result = $query->get_result();
 while (($row = $result->fetch_object()) !== NULL) {
@@ -98,6 +98,7 @@ while (($row = $result->fetch_object()) !== NULL) {
 		"notes"=>$notes,
 		"id"=>$workOrderId
 		];
+	
 }
 
 function secondsToTime($seconds) {
@@ -105,6 +106,7 @@ function secondsToTime($seconds) {
     $dtT = new DateTime("@$seconds");
     return $dtF->diff($dtT)->format('%a days, %h hours, %i minutes');
 }
+
 function assignment($workid){
 	global $db;
 	$employees = "";

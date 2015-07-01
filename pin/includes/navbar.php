@@ -7,13 +7,21 @@ if($folder_count > 3){
 	$relative = "";
 }
 $permission = explode(",", $_SESSION['user_permissions']);
-
+//Find if user has open work orders
 $query = $db->prepare("SELECT * FROM workdata WHERE assignedTo = ? AND status = 0");
 $query->bind_param("i", $_SESSION['user_id']);
 $query->execute();
 $result = $query->get_result();
 $row_cnt = mysqli_num_rows($result);
-
+$alerts = "";
+$query = $db->prepare("SELECT * FROM messages WHERE msgTo = ? AND viewed = 0");
+$query->bind_param("i", $_SESSION['user_id']);
+$query->execute();
+$result = $query->get_result();
+///Find if user has unviewed alerts
+if(mysqli_num_rows($result) > 0){
+	$alerts = mysqli_num_rows($result);
+}
 ////////////////URL's////////////////////
 $url_home = $relative."index.php";
 $url_logout = $relative."logout.php";
@@ -30,6 +38,7 @@ $url_open_work = $relative."workorders/openrequests.php";
 $url_work_progress = $relative."workorders/workprogress.php";
 $url_closed_work = $relative."workorders/closedwork.php";
 $url_my_work_orders = $relative."workorders/myworkorders.php";
+$url_my_alerts = $relative."alerts.php";
 ?>
 <nav class="navbar navbar-default" role="navigation">
 	<div class="container-fluid">
@@ -103,7 +112,7 @@ $url_my_work_orders = $relative."workorders/myworkorders.php";
 			</ul>
 			<p class="nav navbar-text navbar-right">Signed in as <a class="navbar-link" href="<?php echo $url_settings; ?>"><b><?php echo $_SESSION['user_first_name']." ".$_SESSION['user_last_name'] ?>&nbsp;</b></a></p>
 			<?php if($permission[1] == 1) //echo"test";
-			echo "<p class=\"nav navbar-text navbar-right\"><a class=\"navbar-link\" href=\"alerts.php\"><b>Alerts</b><span class=\"badge\">3</span></a></p>&nbsp;";
+			echo "<p class=\"nav navbar-text navbar-right\"><a class=\"navbar-link\" href=\"".$url_my_alerts."\"><b>Alerts</b><span class=\"badge\">".$alerts."</span></a></p>&nbsp;";
 			?>
 		</div><!-- /.navbar-collapse -->
 	</div><!-- /.container-fluid -->

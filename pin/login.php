@@ -3,7 +3,7 @@ session_start();
 require_once 'includes/dbConnect.php';
 $errors = array();
 if(isset($_SESSION['logged']) && $_SESSION['logged'] == 1){
-	header("location:index.php");
+	header("location:".$_SESSION['home_page']);
 }
 if(isset($_POST['submit'])){
 	$email = $_POST['email'];
@@ -26,12 +26,14 @@ if(isset($_POST['submit'])){
 				$_SESSION['user_permissions'] = $row->permissions;
 				$_SESSION['user_authTS'] = $row->authTS;
 				$_SESSION['user_authWO'] = $row->authWO;
+				$_SESSION['home_page'] = $row->homePage;
 				$_SESSION['logged'] = 1;
 				$_SESSION['time'] = time();
 				$logged_in = 1;
-				header("location:index.php");
+				//header("location:index.php");
+				header("location:".$_SESSION['home_page']);
 			}else{
-				$errors[] = "This is not an active account.  Please contact a Time Study administrator.";
+				$errors[] = "This is not an active account.  Please contact a Pin Systems administrator.";
 			}
 		}else{
 			$errors[] = "The entered email address or the password is incorrect.";

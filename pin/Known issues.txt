@@ -1,13 +1,12 @@
 Known issues
 
 1.	Check email address for already in use when adding a new user
-2.	Need password reset feature for admins when user forgets password
-3	Edit user not working
-4.	Edit machine not working
-5.	Form Validation not working on requestwork.php
-6.	Success popup for opening new work request
+2.	Need password reset feature for admins when user forgets password - DONE
+3	Edit user not working - DONE
+4.	Edit machine not working - DONE
+5.	Form Validation not working on requestwork.php - DONE
 7.	Finish request type on requestwork.php -DONE
-8.	Create admin pages for adding trouble types
+8.	Create admin pages for adding trouble types - DONE
 9.	Create alerts
 10.	Create user admin page - DONE
 11.	Make it so that work orders can be given an order preference.

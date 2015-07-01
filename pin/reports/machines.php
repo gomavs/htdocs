@@ -36,9 +36,8 @@ while($row = mysqli_fetch_array($result)) {
 	<script src="http://cdn.oesmith.co.uk/morris-0.5.1.min.js"></script>
 	<link href="../font-awesome-4.1.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
 	<link href="../css/jquery-ui.css" rel="stylesheet">
-	<link href="../css/main.css" rel="stylesheet">
-	<!--<link href="../css/jquery-ui.structure.css" rel="stylesheet">-->
 	<link href="../css/jquery-ui.theme.css" rel="stylesheet">
+	<!--<link href="../css/jquery-ui.structure.css" rel="stylesheet">-->
 	<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
 	<!--[if lt IE 9]>
 	<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
@@ -112,7 +111,6 @@ include '../includes/navbar.php';
 <script src="../js/bootstrap.min.js"></script>
 <script src="../js/jquery-ui.js"></script>
 <script src="../js/validator.js"></script>
-<!--<script src="../assets/js/docs.min.js"></script>-->
 
 <script>
 	

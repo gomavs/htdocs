@@ -57,6 +57,17 @@ include '../includes/navbar.php';
 			</p>
 		</div>
 	</div>
+	<div class="row">
+		<div class="col-lg-4">
+			<img class="img-rounded" src="../images/tools.png" alt="Tools" style="width: 140px; height: 140px;">
+			<h2>Tools</h2>
+			<p>Here you can add, edit and remove trouble types.</p>
+			<p>
+				<a class="btn btn-primary" href="tools.php" role="button">Tools</a>
+			</p>
+		</div>
+		
+	</div>
 
 </div>
 

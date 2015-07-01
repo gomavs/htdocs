@@ -74,9 +74,9 @@ include '../includes/navbar.php';
 		<div class="panel-heading">Open Work Requests</div>
 		<div class="panel-body">
 			<div class="row col-md-12 bottom_fix">
-				<div class ="col-md-1 pull-right"><a href="#" ><button type="button" class="btn btn-primary btn-sm btn-block">Complete WOs</button></a></div>
+			<!--	<div class ="col-md-1 pull-right"><a href="#" ><button type="button" class="btn btn-primary btn-sm btn-block">Complete WOs</button></a></div>
 				<div class ="col-md-1 pull-right"><a href="workprogress.php" ><button type="button" class="btn btn-primary btn-sm btn-block">Open WOs</button></a></div>
-				<div class ="col-md-1 pull-right"><a href="requestwork.php" ><button type="button" class="btn btn-primary btn-sm btn-block">Request Work</button></a></div>
+				<div class ="col-md-1 pull-right"><a href="requestwork.php" ><button type="button" class="btn btn-primary btn-sm btn-block">Request Work</button></a></div>-->
 			</div>
 			<table id="table_id" class="display">
 				<thead>

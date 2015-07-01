@@ -1,7 +1,5 @@
 <?php
 require '../includes/check_login.php';
-//require_once '../includes/dbConnect.php';
-
 
 ?>
 <!DOCTYPE html>
@@ -34,14 +32,14 @@ include '../includes/navbar.php';
 <ol class="breadcrumb">
 	<li><a href="..">Home</a></li>
 	<li><a href="workorders.php">Work Orders</a></li>
-	<li class="active">My Work Orders</li>
+	<li class="active">Closed Work Orders</li>
 </ol>
 <div class="container-fluid">
 	<div class="panel panel-primary">
-		<div class="panel-heading">My Work Orders</div>
+		<div class="panel-heading">Closed Work Orders</div>
 		<div class="panel-body">
 			<div class="row col-md-12 bottom_fix">
-			<!--	<div class ="col-md-1 pull-right"><a href="#" ><button type="button" class="btn btn-primary btn-sm btn-block">Complete WOs</button></a></div>
+			<!--	<div class ="col-md-1 pull-right"><a href="#" ><button type="button" class="btn btn-primary btn-sm btn-block">Open Work Orders</button></a></div>
 				<div class ="col-md-1 pull-right"><a href="openrequests.php" ><button type="button" class="btn btn-primary btn-sm btn-block">Open Requests</button></a></div>
 				<div class ="col-md-1 pull-right"><a href="requestwork.php" ><button type="button" class="btn btn-primary btn-sm btn-block">Request Work</button></a></div>-->
 			</div>
@@ -92,7 +90,7 @@ include '../includes/navbar.php';
 		table = $('#table_id').DataTable( {
 			"bProcessing": true,
 			"sAjaxDataProp":"",
-			"ajax": "../ajax/getmyworkorders.php",
+			"ajax": "../ajax/getclosedworkorders.php",
 			"aoColumns": [
 				{
 					"className":      'details-control',
@@ -110,9 +108,9 @@ include '../includes/navbar.php';
 				{ "data": "Priority", "sWidth": "10%"},
 				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
 					if( authWO >= 3){
-						return '<a class="btn btn-info btn-sm" href=workorder.php?id=' + data.id + '>' + 'Work Order' + '</a>';
+						return '<a class="btn btn-info btn-sm" href=workorder.php?id=' + data.id + '>' + 'View' + '</a>';
 					}else{
-						return '<a class="btn btn-info btn-sm disabled" href=workorder.php?id=' + data.id + '>' + 'Work Order' + '</a>';
+						return '<a class="btn btn-info btn-sm disabled" href=workorder.php?id=' + data.id + '>' + 'View' + '</a>';
 					}
 				}},
 			],

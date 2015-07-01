@@ -13,7 +13,7 @@
       sessionAlive: 30000, //10 Minutes
       redirect_url: '/pin/login.php/',
       click_reset: true,
-      alive_url: '/pin/login.php/',
+      alive_url: '',
       logout_url: '/pin/logout.php/',
       showDialog: true,
 	  dialogTitle: 'Auto Logout',

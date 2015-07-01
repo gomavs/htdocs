@@ -14,11 +14,12 @@ require '../includes/check_login.php';
 	<link href="../css/bootstrap.min.css" rel="stylesheet">
 
 	<!-- Custom styles for this template -->
-	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+
 	<link href="../css/jquery-ui.css" rel="stylesheet">
 	<link href="../css/main.css" rel="stylesheet">
-	<link rel="stylesheet" type="text/css" href="../css/jquery.dataTables.css">
+	<link href="../css/jquery.dataTables.css" rel="stylesheet" type="text/css">
 	<link href="../css/jquery-ui.theme.css" rel="stylesheet">
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
 	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
 	<!--[if lt IE 9]>
 	<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
@@ -39,9 +40,9 @@ include '../includes/navbar.php';
 		<div class="panel-heading">Open Work Orders</div>
 		<div class="panel-body">
 			<div class="row col-md-12 bottom_fix">
-				<div class ="col-md-1 pull-right"><a href="#" ><button type="button" class="btn btn-primary btn-sm btn-block">Complete WOs</button></a></div>
+			<!--	<div class ="col-md-1 pull-right"><a href="#" ><button type="button" class="btn btn-primary btn-sm btn-block">Complete WOs</button></a></div>
 				<div class ="col-md-1 pull-right"><a href="openrequests.php" ><button type="button" class="btn btn-primary btn-sm btn-block">Open Requests</button></a></div>
-				<div class ="col-md-1 pull-right"><a href="requestwork.php" ><button type="button" class="btn btn-primary btn-sm btn-block">Request Work</button></a></div>
+				<div class ="col-md-1 pull-right"><a href="requestwork.php" ><button type="button" class="btn btn-primary btn-sm btn-block">Request Work</button></a></div>-->
 			</div>
 			<table id="table_id" class="display table">
 				<thead>
@@ -131,7 +132,7 @@ include '../includes/navbar.php';
 			}
 		} );
 		
-		/* Formatting function for row details - modify as you need */
+		// Formatting function for row details
 		function format ( d ) {
 			// `d` is the original data object for the row
 			return '<table cellpadding="5" cellspacing="0" border="0" style="padding-left:50px;">'+

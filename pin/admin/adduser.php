@@ -31,10 +31,6 @@ if(isset($_POST['submit'])){
 	}
 	
 	$permissions = $partCheck.",".$workCheck;	
-	echo $firstname." ".$lastname."<br>";
-	echo $email." ".$mobile."<br>";
-	echo $_POST['password']." ".$active." ".$permissions." ".$tsAuthLevel." ".$woAuthLevel." ".$authlevel;
-	
 	mysqli_query($db,"INSERT INTO users (firstname, lastname, email, password, cell, authlevel, permissions, authTS, authWO, department, active) VALUES ('$firstname', '$lastname','$email', '$hashed_password', '$mobile', '$authlevel', '$permissions', '$tsAuthLevel', '$woAuthLevel', '$department', '$active')");
 	//header("location:listusers.php");
 }
@@ -98,7 +94,7 @@ include '../includes/navbar.php';
 										<div class="form-group">
 											<div class="row ">
 												<div class="col-md-12"><label for="email" class="control-label">Email</label></div>
-												<div class="col-md-12"><input type="email" class="form-control" id="email" name="email" placeholder="Email" tabindex="3" data-error="That email address is invalid" required></div>
+												<div class="col-md-12"><input type="email" class="form-control" id="email" name="email" placeholder="Email" tabindex="3" required></div>
 												
 											</div>
 										</div>
@@ -112,8 +108,8 @@ include '../includes/navbar.php';
 											<div class="row ">
 												<div class="col-md-12"><label for="selectDepartment" class="control-label">Department</label></div>
 												<div class="col-md-12">
-													<select id="selectDepartment" name="selectDepartment" class="form-control">
-														<option value="0">--Choose Department--</option>
+													<select id="selectDepartment" name="selectDepartment" class="form-control" required>
+														<option value="" disabled selected>--Choose Department--</option>
 														<option value="100">Mill</option>
 														<option value="200">QC-Boxing</option>
 														<option value="300">Laminate</option>
@@ -191,7 +187,7 @@ include '../includes/navbar.php';
 											<select class="form-control" name="tsAuthLevel" id="partDrop" tabindex="11" disabled>
 												<option value="1">Time Keeper</option>
 												<option value="2">Supervisor</option>
-												<option value="4">Pin Manager</option>
+												<option value="5">Pin Manager</option>
 												<option value="10">Administrator</option>
 											</select>
 										</div>
@@ -266,11 +262,28 @@ include '../includes/navbar.php';
 			$("#superCheck").prop("disabled", true);
 		};
 		$('#add').validator({
-			rules: {
-				email:{required: true, email: true,	remote: "../ajax/check-email.php"}
-			},
-			messages: {
-				email:{required: "that email address is already in use."}
+			fields: {
+				email: {
+					validators: {
+						notEmpty:{
+							message: 'Email field required and cannot be empty'
+						},
+						emailAddress:{
+							message: 'The value is not a valid email address'
+						},
+						remote: {
+							type: 'GET',
+							url: '../ajax/check-email.php',
+							data: function(validator){
+								return {
+									'email': validator.getElementById('email')
+								};
+							},
+							message: 'The email address is available'
+						}
+					}
+					
+				}
 			}
 		});
 	});
