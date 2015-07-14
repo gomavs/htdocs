@@ -9,6 +9,7 @@ while (($row = $result->fetch_object()) !== NULL) {
 	$workOrderId = $row->id;
 	$workRequestId = $row->workRequestId;
 	$startDate = date("F j, Y" ,$row->startDate);
+	$endDate = date("F j, Y", $row->endDate);
 	$dueDate = date("F j, Y", $row->dueDate);
 	$timeEstimate = secondsToTime($row->timeEstimate);
 	$notes = $row->notes;
@@ -88,7 +89,7 @@ while (($row = $result->fetch_object()) !== NULL) {
 		"Item"=>$items, 
 		"Description"=>$description, 
 		"Request Date"=>$requestDate, 
-		"Request Time"=>$requestTime, 
+		"End Date"=>$endDate, 
 		"Requested By"=>$requestedBy, 
 		"Priority"=>$priority,  
 		"Assigned"=>$assignedTo, 

@@ -397,6 +397,7 @@ $(document).ready(function() {
 			data: $('form.machines').serialize(),
 			success: function(data){
 				console.log(data);
+				alert("Changes Saved");
 				//data = jQuery.parseJSON(data);
 				/*$.each(data, function(key, value) {
 					$("#due_date").html("<small>" + value.due_date + "</small>");

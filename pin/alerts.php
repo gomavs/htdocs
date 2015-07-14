@@ -64,6 +64,7 @@ include 'includes/navbar.php';
 				<table id="table_id" class="display table">
 					<thead>
 						<tr>
+							<th></th>
 							<th>Priority</th>
 							<th>Date</th>
 							<th>Time</th>
@@ -74,6 +75,7 @@ include 'includes/navbar.php';
 					</thead>
 					<tbody>
 						<tr>
+							<td></td>
 							<td></td>
 							<td></td>
 							<td></td>
@@ -96,37 +98,66 @@ include 'includes/navbar.php';
 <script>
 
 $(document).ready(function() {
-	var authWO = <?php echo $_SESSION['user_authWO'] ?>;
+	var authWO = <?php echo $_SESSION['user_authWO']; ?>;
+	var user_id = <?php echo $_SESSION['user_id']; ?>;
 	table = $('#table_id').DataTable( {
 		"bProcessing": true,
 		"sAjaxDataProp":"",
-		"ajax": "ajax/getalerts.php",
+		"ajax": "ajax/getalerts.php?userid="+user_id,
+		"aaSorting": [],
 		"aoColumns": [
+			{	"data": "mark",
+				"sWidth": "2%",
+				"orderable": false
+			},
 			{ "data": "Priority", "sWidth": "5%" },
 			{ "data": "Date", "sWidth": "10%" },
 			{ "data": "Time", "sWidth": "10%" },
-			{ "data": "Message", "sWidth": "55%" },
+			{ "data": "Message", "sWidth": "53%" },
 			{ "data": "From", "sWidth": "10%" },
-			//{ "data": "Command", "sWidth": "10%"}
 			{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
-				
-				return '<a class="btn btn-info btn-sm" href=' + data.link + '>View</a>&nbsp;&nbsp;<button id=delete-' + data.id + ' type="button" class="btn btn-danger btn-sm" >Delete</button>';
-			
+				if(data.id > 0){
+					return '<a class="btn btn-info btn-sm" href=' + data.link + '&alert=' + data.id + '>View</a>&nbsp;&nbsp;<button id=delete-' + data.id + ' type="button" class="btn btn-danger btn-sm" >Delete</button>';
+				}else{
+					return '';
+				}
 			}},
 		],
 		"fnRowCallback": function( nRow, data, iDisplayIndex ) {
 			try{
-				if(data.Priority == 'High'){
-					$(nRow).addClass("danger");
-				} else if (data.Priority == 'Medium'){
-					$(nRow).addClass("warning");
-				}				
+				if(data.viewed == 0){
+					$(nRow).addClass("info");
+				}
 			} catch(ex){
 				alert("fnRowCallback exception:");
 			}
 			return nRow
-		}
-	} );	
+		},
+		"createdRow": function ( row, data, index ) {
+			if(data.status == 3){
+				$('td', row).eq(0).addClass('text-danger high-importance');
+			}else if (data.status == 2){
+				$('td', row).eq(0).addClass('text-primary med-importance');
+			}
+        }
+	});	
+	//Delete alert
+	$( "#table_id" ).on( "click", "[id^=delete-]", function() {
+		var buttonId = this.id;
+		var arr = buttonId.split('-');
+		buttonId = arr[1];
+		//table.row('.selected').remove().draw( false );
+		table.row($(this).parents('tr')).remove().draw(false);
+		var request = $.getJSON("ajax/deletealert.php", {alertid : buttonId, userid : user_id}, function(data) {
+			console.log(data);
+			
+			$.each(data, function(key, value) {
+				//alert (value.alerts);
+				$('.badge').text(value.alerts);
+			});
+		});
+		
+	});
 	
 });
 

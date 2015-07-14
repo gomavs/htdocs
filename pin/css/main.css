@@ -173,8 +173,19 @@ td.details-control {
     background: url('../images/add.png') no-repeat center center;
     cursor: pointer;
 }
+
 tr.shown td.details-control {
     background: url('../images/delete.png') no-repeat center center;
+}
+
+td.high-importance {
+	font-size: 150%;
+	//color: red;
+}
+
+td.med-importance {
+	font-size: 150%;
+	//color: yellow;
 }
 
 .RbtnMargin {
@@ -209,6 +220,10 @@ background: #dff0d8
 }
 .panel-fixed{
 	height: 420px;
+}
+
+.leftPull{
+	padding-left: 0px;
 }
 
 

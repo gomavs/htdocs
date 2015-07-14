@@ -1,5 +1,6 @@
 <?php
 require_once("../includes/dbConnect.php");
+include '../includes/systems.php';
 if(isset($_GET['id']) && isset($_GET['user'])){
 	$workOrderId = $_GET["id"];
 	$userId = $_GET["user"];
@@ -31,6 +32,19 @@ if(isset($_GET['id']) && isset($_GET['user'])){
 		$query = $db->prepare("UPDATE workorder SET endDate = ?, status = 1 WHERE id = ?");
 		$query->bind_param("ii", $timenow, $workOrderId);
 		$query->execute();
+		$message = "Work Order <b>".$workOrderId."</b> has been completed.";	
+		$link = "workorders/workorder.php?id=".$workOrderId;
+		$viewed = 0;
+		$selectPriority = "3";
+		$query = $db->prepare("SELECT id FROM users WHERE authWO >= 4 AND department = 600");
+		$query->execute();
+		$result = $query->get_result();
+		while (($row = $result->fetch_object()) !== NULL) {
+			$query1 = $db->prepare("INSERT INTO messages (msgTo, msgFrom, priority, date, viewed, message, link) VALUES (?, ?, ?, ?, ?, ?, ?)");
+			$query1->bind_param('iiiiiss', $row->id, $userId, $selectPriority, $timenow, $viewed, $message, $link);
+			$query1->execute();
+			sendAlert($db->insert_id);
+		}
 	}
 
 	$data[] = ["stop_time"=>$timenow];

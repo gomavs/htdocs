@@ -1,6 +1,12 @@
 <?php
 require '../includes/check_login.php';
 //require_once '../includes/dbConnect.php';
+include "../includes/systems.php";
+if(isset($_GET['alert'])){
+	$query = $db->prepare("UPDATE messages SET viewed = 1 WHERE id = ? ");
+	$query->bind_param("i",$_GET['alert']);
+	$query->execute();
+}
 
 if(isset($_GET['id'])){
 	$requestId = $_GET['id'];
@@ -15,7 +21,6 @@ if(isset($_GET['id'])){
 	$priority = $row['priority'];
 	$description = $row['description'];
 	$accepted = $row['accepted'];
-	//$timestamp = $row['timestamp'];
 	$requestDate = date("F j, Y"  ,$row['timestamp']);
 	$requestTime = "@".$row['timestamp'];
 	$requestTime = new DateTime($requestTime);
@@ -23,7 +28,6 @@ if(isset($_GET['id'])){
 	$requestTime = $requestTime->format("h:i A");
 	$other = $row['other'];
 	$priorityLevel = "";
-	//Priority Select dropdown
 	For($i=1; $i<4; $i++){
 		switch ($i){
 			case 1: $x = "Low"; break;
@@ -36,6 +40,43 @@ if(isset($_GET['id'])){
 		}else{
 			$priorityLevel = $priorityLevel."<option value=\"".$i."\">".$x."</option>";
 		}	
+	}
+	//Fill in approval side if request has already been accepted
+	$hideApproval = "";
+	$due_date = "";
+	$approval_notes = "";
+	$days = "";
+	$hrs = "";
+	$mins = "";
+	$disable_this = "";
+	$check_this = "";
+	$hide_this= "hidden";
+	$message = "";
+	$assignedTechs = array();
+	if($accepted > 0){
+		//Hide Approve request button if it has already been approved.
+		//Fill in the data for the approve section
+		$hideApproval = "hidden";
+		$disable_this = "disabled";
+		$message = "This work request has already been approved!";
+		$query = $db->prepare("SELECT id, dueDate, timeEstimate, notes FROM workorder WHERE workRequestId = ?");
+		$query->bind_param("i", $requestId);
+		$query->execute();
+		$result = $query->get_result();
+		$row = $result->fetch_assoc();
+		$workOrder = $row['id'];
+		$due_date = date("M d, Y", $row['dueDate']);
+		$timeEstimate = secondsToTime($row['timeEstimate']);
+		list($days, $hrs, $mins) = explode(",", $timeEstimate);
+		$approval_notes = $row['notes'];
+		
+		$query = $db->prepare("SELECT * FROM workdata WHERE workOrderId = ?");
+		$query->bind_param("i", $workOrder);
+		$query->execute();
+		$result = $query->get_result();
+		while (($row = $result->fetch_object()) !== NULL) {
+			$assignedTechs[] = $row->assignedTo;
+		}
 	}
 	//User Select dropdown
 	$selectUser = "";
@@ -126,7 +167,11 @@ if(isset($_GET['id'])){
 	$checkbox_list = "";
 	$availableTechs = array();
 	while (($row = $result->fetch_object()) !== NULL) {
-		$checkbox_list = $checkbox_list."<div class=\"checkbox\"><label><input type=\"checkbox\" name=\"check_list[]\" value=\"".$row->id."\">".$row->firstname." ".$row->lastname."</label></div>";
+		if(in_array($row->id, $assignedTechs)){
+			$checkbox_list = $checkbox_list."<div class=\"checkbox\"><label><input type=\"checkbox\" name=\"check_list[]\" value=\"".$row->id."\" checked ".$disable_this.">".$row->firstname." ".$row->lastname."</label></div>";
+		}else{
+			$checkbox_list = $checkbox_list."<div class=\"checkbox\"><label><input type=\"checkbox\" name=\"check_list[]\" value=\"".$row->id."\" ".$disable_this.">".$row->firstname." ".$row->lastname."</label></div>";
+		}
 		$availableTechs[] = $row->id;
 	}
 	$assignUser = "";
@@ -136,22 +181,63 @@ if(isset($_GET['id'])){
 	while (($row = $result->fetch_object()) !== NULL) {
 		$permission = explode(",", $row->permissions);
 		if($permission[1] == 1){
-			$assignUser = $assignUser."<option value=\"".$row->id."\">".$row->firstname." ".$row->lastname."</option>";
+			if(in_array($row->id, $assignedTechs)){
+				$check_this = "checked";
+				$hide_this= "";
+				$assignUser = $assignUser."<option value=\"".$row->id."\" selected>".$row->firstname." ".$row->lastname."</option>";
+			}else{
+				$assignUser = $assignUser."<option value=\"".$row->id."\">".$row->firstname." ".$row->lastname."</option>";
+			}
 		}
 	}
 }
+//Form is submitted
 if (isset( $_POST[ 'submit' ] ) ) {
 	$requestType = $_POST['requestType'];
 	$inputOther = "";
 	$workCenterId = "";
-	if($requestType == 5){
-		$selectItem = 0;
-		$inputOther = $_POST['inputOther'];
-	}else{
-		$selectItem = $_POST['selectItem'];
-	}
-	if($requestType == 1){
-		$workCenterId = $_POST['selectItem'];
+	$selectItem = $_POST['selectItem'];
+	switch($requestType){
+		case 1:
+			$workCenterId = $_POST['selectItem'];
+			$query1 = $db->prepare("SELECT name, center FROM workcenter WHERE id = ?");
+			$query1->bind_param("i", $workCenterId);
+			$query1->execute();
+			$result1 = $query1->get_result();
+			$row1 = $result1->fetch_assoc();
+			$messageEnd = "Center ".$row1['center']." ".$row1['name'];
+			break;
+		case 2:
+			$query1 = $db->prepare("SELECT item FROM facilitytype WHERE id = ?");
+			$query1->bind_param("i", $itemId);
+			$query1->execute();
+			$result1 = $query1->get_result();
+			$row1 = $result1->fetch_assoc();
+			$messageEnd = $row1['item'];
+			break;
+		case 3:
+			$query1 = $db->prepare("SELECT item FROM safetytype WHERE id = ?");
+			$query1->bind_param("i", $itemId);
+			$query1->execute();
+			$result1 = $query1->get_result();
+			$row1 = $result1->fetch_assoc();
+			$messageEnd = $row1['item'];
+			break;
+		case 4:
+			$query1 = $db->prepare("SELECT item FROM toolstype WHERE id = ?");
+			$query1->bind_param("i", $itemId);
+			$query1->execute();
+			$result1 = $query1->get_result();
+			$row1 = $result1->fetch_assoc();
+			$messageEnd = $row1['item'];
+			break;
+		case 5: 
+			$selectItem = 0;
+			$inputOther = $_POST['inputOther'];
+			$messageEnd = $_POST['inputOther'];
+			
+			break; 
+		default : $itemId = 0;
 	}
 	$selectPriority = $_POST['selectPriority'];
 	$textDescription = $_POST['textDescription'];
@@ -159,7 +245,6 @@ if (isset( $_POST[ 'submit' ] ) ) {
 	$completeBy = strtotime($_POST['from']);
 	$estimatedTime = ($_POST['inputEstimatedTimeDays'] * 86400)+($_POST['inputEstimatedTimeHrs'] * 3600)+($_POST['inputEstimatedTimeMin'] * 60);
 	$textNotes = $db->real_escape_string($_POST['textNotes']);
-	
 	$date = new DateTime();
 	$timestamp = $date->getTimestamp();
 	$approvedBy = $_SESSION['user_id'];
@@ -173,18 +258,39 @@ if (isset( $_POST[ 'submit' ] ) ) {
 	$query = "INSERT INTO workorder (workRequestId, workCenterId, startDate, dueDate, timeEstimate, notes, status) VALUES ('$requestId', '$workCenterId', '$timestamp', '$completeBy', '$estimatedTime', '$textNotes', '$status')";
 	$db->query($query);
 	$workOrderId =  $db->insert_id;
-	//echo $workOrderId;
-	//Assign techs to the workorder
+	//Assign techs to the workorder and alert them of the new work order
+	$viewed = 0;
+	$message = "You have been assigned a new work order for <b>".$messageEnd."</b>";
+	$link = "workorders/workorder.php?id=".$workOrderId;
 	if(!empty($_POST['check_list'] )){
 		foreach($_POST['check_list'] as $check){
 			mysqli_query($db,"INSERT INTO workdata (workOrderId, assignedTo) VALUES ('$workOrderId', '$check')");
+			$query1 = $db->prepare("INSERT INTO messages (msgTo, msgFrom, priority, date, viewed, message, link) VALUES (?, ?, ?, ?, ?, ?, ?)");
+			$query1->bind_param('iiiiiss', $check, $approvedBy, $selectPriority, $timestamp, $viewed, $message, $link);
+			$query1->execute();
+			sendAlert($db->insert_id);
 		}
 	}
 	if(isset($_POST['checkboxOther'])){
 		$assignOther = intval($_POST['selectOther']);
 		mysqli_query($db,"INSERT INTO workdata (workOrderId, assignedTo) VALUES ('$workOrderId', '$assignOther')");
+		$query1 = $db->prepare("INSERT INTO messages (msgTo, msgFrom, priority, date, viewed, message, link) VALUES (?, ?, ?, ?, ?, ?, ?)");
+		$query1->bind_param('iiiiiss', $assignOther, $approvedBy, $selectPriority, $timestamp, $viewed, $message, $link);
+		$query1->execute();
+		sendAlert($db->insert_id);
 	}
+	//Alert requester of the work order approval.
+	$message = "Your work request has for <b>".$messageEnd."</b> has been approved.";
+	$query1 = $db->prepare("INSERT INTO messages (msgTo, msgFrom, priority, date, viewed, message, link) VALUES (?, ?, ?, ?, ?, ?, ?)");
+	$query1->bind_param('iiiiiss', $selectRequestBy, $approvedBy, $selectPriority, $timestamp, $viewed, $message, $link);
+	$query1->execute();
+	sendAlert($db->insert_id);
 	header('location: workprogress.php');
+}
+function secondsToTime($seconds) {
+    $dtF = new DateTime("@0");
+    $dtT = new DateTime("@$seconds");
+    return $dtF->diff($dtT)->format('%a,%h,%i');
 }
 ?>
 <!DOCTYPE html>
@@ -205,11 +311,7 @@ if (isset( $_POST[ 'submit' ] ) ) {
 	<link rel="stylesheet" type="text/css" href="../css/jquery.dataTables.css">
 	<link href="../css/jquery-ui.theme.css" rel="stylesheet">
 	
-	<style>
-    input {
-        max-width: 100%;
-    } 
-	</style>
+	<style> input { max-width: 100%; }</style>
 	<!--<link rel="styesheet" href="../css/folder/popup.css">-->
 	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
 	<!--[if lt IE 9]>
@@ -245,7 +347,7 @@ include '../includes/navbar.php';
 								<div class="row form-group">
 									<div class="col-md-2"><label for="selectRequestType" class="control-label">Request Type</label></div>
 									<div class="col-md-3">
-										<select id="selectRequestType" class="form-control" name="requestType" required>
+										<select id="selectRequestType" class="form-control" name="requestType" required <?php  echo $disable_this; ?>>
 											<?php
 												echo $type_list;
 											?>
@@ -257,17 +359,17 @@ include '../includes/navbar.php';
 								<div class="row form-group" id="machines">
 									<div class="col-md-2"><label for="selectMachine" class="control-label" id="itemType"><?php echo $item_name; ?></label></div>
 									<div class="col-md-4" id="dropdown">
-										<select id="selectItem" name="selectItem" class="form-control" required>
+										<select id="selectItem" name="selectItem" class="form-control" required <?php  echo $disable_this; ?>>
 											<?php echo $item_list; ?>
 										</Select>
 									</div>
 									<div class="col-md-4 hidden" id="textOther">
-										<input type="text" class="form-control" id="inputOther" name="inputOther" value="<?php echo $other; ?>">
+										<input type="text" class="form-control" id="inputOther" name="inputOther" value="<?php echo $other; ?>" <?php  echo $disable_this; ?>>
 									</div>
 								</div>
 								<div class="row form-group" id="priority">
 									<div class="col-md-2"><label for="selectPriority" class="control-label">Priority</label></div>
-									<div class="col-md-3"><select id="selectPriority" name="selectPriority" class="form-control">
+									<div class="col-md-3"><select id="selectPriority" name="selectPriority" class="form-control" <?php  echo $disable_this; ?>>
 										<?php
 											echo $priorityLevel;
 										?>
@@ -275,12 +377,12 @@ include '../includes/navbar.php';
 								</div>
 								<div class="row form-group" id="description">
 									<div class="col-md-2"><label for="textDescription" class="control-label">Description</label></div>
-									<div class="col-md-10"><textarea class="form-control" name="textDescription" id="textDescription" rows="2" required><?php echo $description; ?></textarea></div>
+									<div class="col-md-10"><textarea class="form-control" name="textDescription" id="textDescription" rows="2" required <?php  echo $disable_this; ?>><?php echo $description; ?></textarea></div>
 								</div>
 								<div class="row form-group" id="requestBy">
 									<div class="col-md-2"><label for="selectRequestBy" class="control-label">Request By</label></div>
 									<div class="col-md-3">
-										<select id="selectRequestBy" name="selectRequestBy" class="form-control" required>
+										<select id="selectRequestBy" name="selectRequestBy" class="form-control" required <?php  echo $disable_this; ?>>
 											<?php
 												echo $selectUser;
 											?>
@@ -302,22 +404,22 @@ include '../includes/navbar.php';
 							<div class="panel-body">
 								<div class="row form-group" id="completeBy">
 									<div class="col-md-3"><label for="inputcompleteBy">Complete By</label></div>
-									<div class="col-md-3"><input class="form-control" type="text" id="from" name="from" required></div>
+									<div class="col-md-3"><input class="form-control" type="text" id="from" name="from" required value="<?php echo $due_date; ?>" <?php  echo $disable_this; ?>></div>
 								</div>
 								<div class="row" id="estimatedTime">
 									<div class="col-md-3"><label for="inputEstimatedTime">Estimated time</label></div>
-									<div class="form-group col-xs-2" id="inputDays"><input class="form-control" type="text" id="inputEstimatedTimeDays" name="inputEstimatedTimeDays">Days</div>
-									<div class="form-group col-xs-2" id="inputHours"><input class="form-control" type="text" id="inputEstimatedTimeHrs" name="inputEstimatedTimeHrs">Hrs</div>
-									<div class="form-group col-xs-2" id="inputMinutes"><input class="form-control" type="text" min="0" id="inputEstimatedTimeMin" name="inputEstimatedTimeMin">Mins</div>
+									<div class="form-group col-xs-2" id="inputDays"><input class="form-control" type="text" id="inputEstimatedTimeDays" name="inputEstimatedTimeDays" value = "<?php  echo $days; ?>" <?php  echo $disable_this; ?>>Days</div>
+									<div class="form-group col-xs-2" id="inputHours"><input class="form-control" type="text" id="inputEstimatedTimeHrs" name="inputEstimatedTimeHrs" value = "<?php  echo $hrs; ?>" <?php  echo $disable_this; ?>>Hrs</div>
+									<div class="form-group col-xs-2" id="inputMinutes"><input class="form-control" type="text" min="0" id="inputEstimatedTimeMin" name="inputEstimatedTimeMin" value = "<?php  echo $mins; ?>" <?php  echo $disable_this; ?>>Mins</div>
 								</div>
 								<div class="row form-group" id="assignTo">
 									<div class="col-md-3"><label for="Checkbox">Assigned to</label></div>
 									<div class="col-md-3">
 										<?php echo $checkbox_list; ?>
-										<div class="checkbox"><label><input id="checkboxOther" type="checkbox" name="checkboxOther">Other</label></div>
+										<div class="checkbox"><label><input id="checkboxOther" type="checkbox" name="checkboxOther" <?php  echo $check_this; ?>  <?php echo $disable_this; ?>>Other</label></div>
 									</div>
-									<div class="col-md-3" id="assignOther">
-										<select id="selectOther" name="selectOther" class="form-control ">
+									<div class="col-md-3 <?php echo $hide_this; ?>" id="assignOther">
+										<select id="selectOther" name="selectOther" class="form-control " <?php  echo $disable_this; ?>>
 											<option value="0">-- Choose User --</option>
 											<?php
 												echo $assignUser;
@@ -327,7 +429,7 @@ include '../includes/navbar.php';
 								</div>
 								<div class="row form-group" id="notes">
 									<div class="col-md-3"><label for="textNotes">Notes</label></div>
-									<div class="col-md-9"><textarea class="form-control" name="textNotes" id="textNotes" rows="3"></textarea></div>
+									<div class="col-md-9"><textarea class="form-control" name="textNotes" id="textNotes" rows="3" <?php  echo $disable_this; ?>><?php echo $approval_notes; ?></textarea></div>
 								</div>
 							</div>
 						</div>
@@ -335,10 +437,11 @@ include '../includes/navbar.php';
 				</div>
 				
 				<div class="row col-md-12 spacer">
-					<div class="col-md-2">
+					<div class="col-md-2 <?php echo $hideApproval; ?>">
 						<input name="submit" type="submit" class="btn btn-primary" value="Approve Request" />
 						<div class="help-block with-errors"></div>
 					</div>
+					<label><?php echo $message; ?></label>
 				</div>
 			</form>
 		</div>
@@ -360,7 +463,7 @@ include '../includes/navbar.php';
 			$("#dropdown").addClass("hidden");
 			$("#textOther").removeClass("hidden");
 		}
-		$("#assignOther").addClass("hidden");
+		//$("#assignOther").addClass("hidden");
 		$("#checkboxOther").change(function(){
 			if($('#checkboxOther').is(":checked"))
 				$("#assignOther").removeClass("hidden");
@@ -374,7 +477,7 @@ include '../includes/navbar.php';
 			$('#selectItem').empty();
 			$("#dropdown").removeClass("hidden");
 			$("#textOther").addClass("hidden");
-			$('#selectItem').addAttr("required");
+			$('#selectItem').attr("required");
 			var optionValue = $( "#selectRequestType" ).val();
 			if (optionValue > 0){
 				if(optionValue == 1){

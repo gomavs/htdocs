@@ -16,13 +16,18 @@ while (($row = $result->fetch_object()) !== NULL) {
 }
 $user_list = $user_list."</select>";
 if(isset($_POST['submit'])){
-	
 	$firstname = $_POST['firstname'];
 	$lastname = $_POST['lastname'];
 	$email = $_POST['email'];
 	$mobile = $_POST['cell'];
+	
 	$department = $_POST['department'];
 	$active = $_POST['active'];
+	if(isset($_POST['carrierId'])){
+		$carrier = $_POST['carrierId'];
+	}else{
+		$carrier = 0;
+	}
 	if(isset($_POST['partCheck'])){
 		$partCheck = 1;
 		$tsAuthLevel = $_POST['authTS'];
@@ -44,8 +49,8 @@ if(isset($_POST['submit'])){
 	}
 	$permissions = $partCheck.",".$workCheck;
 	if(isset($_POST['id'])){
-		$query = $db->prepare("UPDATE users SET firstname = ?, lastname = ?, email = ?, cell = ?, authlevel = ?, permissions = ?, authTS = ?, authWO = ?, department = ?, active =? WHERE id = ?");
-		$query->bind_param("ssssisiiiii", $firstname, $lastname, $email, $mobile, $authlevel, $permissions, $tsAuthLevel, $woAuthLevel, $department, $active, $_POST['id']);
+		$query = $db->prepare("UPDATE users SET firstname = ?, lastname = ?, email = ?, cell = ?, carrierId = ?, authlevel = ?, permissions = ?, authTS = ?, authWO = ?, department = ?, active =? WHERE id = ?");
+		$query->bind_param("ssssiisiiiii", $firstname, $lastname, $email, $mobile, $carrier, $authlevel, $permissions, $tsAuthLevel, $woAuthLevel, $department, $active, $_POST['id']);
 		$query->execute();
 	}
 }
@@ -83,6 +88,70 @@ include '../includes/navbar.php';
 	<li><a href="useradmin.php">User Administration</a></li>
 	<li class="active">Edit user</li>
 </ol>
+<!--Modal for adding new phone carrier-->
+<div class="modal fade" id="carrierModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<form class="form-horizontal" id="carrier" data-toggle="validator" role="form">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="requestModalLabel">Add Phone Carrier</h4>
+				</div>
+				
+					<div class="modal-body lWellPadding">
+						<div class="row">
+							<div class="form-group">
+								<div class="col-md-3">
+									<label for="inputCarrierName" class="control-label">Carrier Name</label>
+								</div>
+								<div class="col-md-4">
+									<input type="text" class="form-control" id="inputCarrierName" name="inputCarrierName" placeholder="Carrier Name" required>
+								</div>
+								<div class="col-md-5">
+									<div class="help-block with-errors"></div>
+								</div>
+							</div>
+						</div>
+						<div class="row">
+							<div class="form-group">
+								<div class="col-md-3">
+									<label for="inputCarrierSuffix" class="control-label">Carrier Suffix</label>
+								</div>
+								<div class="col-md-4">
+									<div class="input-group">
+										<span class="input-group-addon" id="basic-addon1">@</span>
+										<input type="text" class="form-control" id="inputCarrierSuffix" name="inputCarrierSuffix" placeholder="Carrier Suffix" aria-describedby="basic-addon1" required>
+									</div>
+								</div>
+								<div class="col-md-5">
+									<div class="help-block with-errors"></div>
+								</div>
+							</div>
+						</div>
+						<div class="row">
+							<div class="form-group">
+								<div class="col-md-3">
+									<label for="inputCarrierRule class="control-label">Carrier Rule</label>
+								</div>
+								<div class="col-md-3">
+									<div class="input-group">
+										<input type="text" class="form-control" id="inputCarrierRule" name="inputCarrierRule" aria-describedby="basic-addon1" value="10" required>
+										<span class="input-group-addon" id="basic-addon1">digits</span>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+					</div>
+				
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					<input class="btn btn-primary" type="submit" value="Add Carrier" id="addCarrier">
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
 <div class="container-fluid">
 	<div class="panel panel-primary">
 		<div class="panel-heading">Edit User</div>
@@ -105,70 +174,126 @@ include '../includes/navbar.php';
 								<div class="panel panel-heading">Pesonal Information</div>
 								<div class="panel-body">
 									<input type="hidden" name="id" value=""/>
-									<div class="col-md-6">
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="inputFirstName" class="control-label">First Name</label></div>
-												<div class="col-md-12"><input type="text" class="form-control" id="inputFirstName" name="firstname" placeholder="First Name" tabindex="1" required></div>
+									<div class="col-md-12">
+										<div class="row">
+											<div class="col-md-6 rWellPadding">
+												<div class="form-group">
+													<div class="row">
+														<label for="inputFirstName" class="control-label">First Name</label>
+													</div>
+													<div class="row">
+														<input type="text" class="form-control" id="inputFirstName" name="firstname" placeholder="First Name" minlength="3" tabindex="1" required>
+													</div>
+												</div>
 											</div>
-										</div>
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="email" class="control-label">Email</label></div>
-												<div class="col-md-12"><input type="email" class="form-control" id="email" name="email" placeholder="Email" tabindex="3" data-error="That email address is invalid" required></div>
-												
-											</div>
-										</div>
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="selectDepartment" class="control-label">Department</label></div>
-												<div class="col-md-12">
-													<select id="selectDepartment" name="department" class="form-control">
-														<option value="0">--Choose Department--</option>
-														<option value="100">Mill</option>
-														<option value="200">QC-Boxing</option>
-														<option value="300">Laminate</option>
-														<option value="400">Assembly</option>
-														<option value="450">Prototypes/Projects</option>
-														<option value="500">Shipping</option>
-														<option value="550">Receiving</option>
-														<option value="575">Warehouse</option>
-														<option value="600">Maintenance</option>
-														<option value="700">Engineering Admin</option>
-														<option value="701">Engineering</option>
-														<option value="702">Design</option>
-														<option value="703">HR</option>
-														<option value="704">Accounting</option>
-														<option value="705">IT</option>
-														<option value="706">Purchasing</option>
-														<option value="707">Sales</option>
-														<option value="708">Customer Service/General</option>
-														<option value="710">Executive</option>
-														<option value="712">Shop Supervisors</option>
-													</Select>
+											<div class="col-md-6">
+												<div class="form-group">
+													<div class="row">
+														<label for="inputLastName" class="control-label">Last Name</label>
+													</div>
+													<div class="row">
+														<input type="text" class="form-control" id="inputLastName" name="lastname" placeholder="Last Name" minlength="3" tabindex="2" required>
+													</div>
 												</div>
 											</div>
 										</div>
-									</div>
-									<div class="col-md-6">
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="inputLastName" class="control-label">Last Name</label></div>
-												<div class="col-md-12"><input type="text" class="form-control" id="inputLastName" name="lastname" placeholder="Last Name" tabindex="2" required></div>
+										<div class="row">
+											<div class="col-md-6 rWellPadding">
+												<div class="form-group">
+													<div class="row">
+														<label for="email" class="control-label">Email</label>
+													</div>
+													<div class="row">
+														<input type="email" class="form-control" id="email" name="email" placeholder="Email" tabindex="3" data-error="That email address is invalid" required>
+													</div>
+												</div>
 											</div>
 										</div>
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="inputMobile" class="control-label">Mobile Number</label></div>
-												<div class="col-md-12"><input type="text" class="form-control" id="inputMobile" name="cell" placeholder="Mobile Number" tabindex="4"></div>
+										<div class="row">
+											<div class="col-md-6 rWellPadding">
+												<div class="form-group">
+													<div class="row">
+														<label for="inputMobile" class="control-label">Mobile Number</label>
+													</div>
+													<div class="row">
+														<input type="text" class="form-control" id="inputMobile" name="cell" placeholder="Mobile Number" tabindex="6">
+													</div>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="form-group">
+													<div class="row">
+														<label for="selectCarrier" class="control-label">Carrier</label>
+													</div>
+													<div class="row">
+														<div class="col-md-10 leftPull">
+														<select class="form-control" id="carrierId" name="carrierId" tabindex="7">
+															<option value="" disabled selected>--Choose Carrier--</option>
+															<?php
+															$query = $db->prepare("SELECT * FROM smsaddress ORDER BY carrier ASC");
+															$query->execute();
+															$result = $query->get_result();
+															while (($row = $result->fetch_object()) !== NULL) {
+															?>
+																<option value="<?php echo $row->id ?>"><?php echo $row->carrier ?></option>
+															<?php
+															}
+															?>
+														</select>
+														</div>
+														<div class="col-md-2 leftPull">
+														<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#carrierModal" aria-label="Add">
+															<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+														</button>
+														</div>
+													</div>
+												</div>
 											</div>
 										</div>
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="active" class="control-label">Active</label></div>
-												<div class="radio">
-													<label class="col-md-4"><input type="radio" name="active" value="1" tabindex="7" required checked>Yes</label>
-													<label><input type="radio" name="active" value="0" tabindex="8" required>No</label>
+										<div class="row">
+											<div class="col-md-6 rWellPadding">
+												<div class="form-group">
+													<div class="row">
+														<label for="selectDepartment" class="control-label">Department</label>
+													</div>
+													<div class="row">
+														<select id="department" name="department" class="form-control" tabindex="8" required>
+															<option value="" disabled selected>--Choose Department--</option>
+															<option value="100">Mill</option>
+															<option value="200">QC-Boxing</option>
+															<option value="300">Laminate</option>
+															<option value="400">Assembly</option>
+															<option value="450">Prototypes/Projects</option>
+															<option value="500">Shipping</option>
+															<option value="550">Receiving</option>
+															<option value="575">Warehouse</option>
+															<option value="600">Maintenance</option>
+															<option value="700">Engineering Admin</option>
+															<option value="701">Engineering</option>
+															<option value="702">Design</option>
+															<option value="703">HR</option>
+															<option value="704">Accounting</option>
+															<option value="705">IT</option>
+															<option value="706">Purchasing</option>
+															<option value="707">Sales</option>
+															<option value="708">Customer Service/General</option>
+															<option value="710">Executive</option>
+															<option value="712">Shop Supervisors</option>
+														</Select>
+													</div>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="form-group">
+													<div class="row">
+														<label for="active" class="control-label">Active</label>
+													</div>
+													<div class="row">
+														<div class="radio">
+															<label class="col-md-4"><input type="radio" name="active" value="1" tabindex="9" checked>Yes</label>
+															<label><input type="radio" name="active" value="0" tabindex="8">No</label>
+														</div>
+													</div>
 												</div>
 											</div>
 										</div>
@@ -178,7 +303,7 @@ include '../includes/navbar.php';
 						</div>
 					</div>
 					<div class="col-md-1">
-					
+						
 					</div>
 					<div class="col-md-4">
 						<div class="row spacer">

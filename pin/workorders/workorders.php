@@ -2,11 +2,19 @@
 require '../includes/check_login.php';
 $data = [];
 $data2 = [];
+$data3 = [];
 $lastWeek = strtotime("-1 week");
-//echo $lastWeek;
 
-$query = $db->prepare("SELECT workcenter.id, workcenter.center, workcenter.name, COUNT(workorder.id) as c FROM workorder LEFT JOIN workcenter ON workorder.workcenterId = workcenter.id WHERE workorder.startDate >= ? AND workorder.status=1 GROUP BY workcenter.id ORDER BY c DESC LIMIT 5 ");
-$query->bind_param("i", $lastWeek);
+//echo $lastWeek;
+$today = (new DateTime())->setTime(0,0);
+$today->setTimezone(new DateTimeZone('America/Chicago'));
+$today  = $today->sub(new DateInterval('P1W'));
+$now = $today->format('U');
+
+
+
+$query = $db->prepare("SELECT workcenter.id, workcenter.center, workcenter.name, COUNT(workorder.id) as c FROM workorder LEFT JOIN workcenter ON workorder.workcenterId = workcenter.id LEFT JOIN workrequest ON workorder.workRequestId = workrequest.id WHERE workorder.startDate >= ? AND workorder.status=1 AND workrequest.workTypeId = 1 GROUP BY workcenter.id ORDER BY c DESC LIMIT 5 ");
+$query->bind_param("i", $now);
 $query->execute();
 $result = $query->get_result();
 while (($row = $result->fetch_object()) !== NULL) {
@@ -18,13 +26,27 @@ $query->bind_param("i", $lastWeek);
 $query->execute();
 $result = $query->get_result();
 while (($row = $result->fetch_object()) !== NULL) {
-
 	$data2[] = (object)array("type"=>$row->type, "a"=>$row->c);
 }
 
-//echo json_encode($data2);
+//echo $today->format('U')."</br>";
+
+for($i=1; $i <= 8; $i++){
+	$yesterday = $today->add(new DateInterval('P1D'));
+	$then = $yesterday->format('U');
+	$query = $db->prepare("SELECT COUNT(*) AS orders FROM workorder WHERE endDate >= ? AND endDate < ? ORDER BY endDate DESC");
+	$query->bind_param("ii", $now, $then);
+	$query->execute();
+	$result = $query->get_result();
+	$row = $result->fetch_assoc();
+	$data3[] = array("day"=>$today->format('Y-m-d'), "value"=>$row['orders']);
+	$now = $yesterday->format('U');
+}
+
+$data3 = json_encode($data3);
+//echo $data3;
 ?>
-<!DOCTYPE html>
+<!DOCTYPE html
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -62,42 +84,58 @@ include '../includes/navbar.php';
 	<li Class="active">Work Orders</a></li>
 </ol>
 <div class="container-fluid">
-	<div class="row col-md-12 spacer">
-		<div class="col-md-3">
-			<div class="panel panel-primary">
-				<div class="panel-heading">Top 5 Machines Worked Over The Last 7 Days</div>
-				<div class="panel-body">
-					<div class="row">
-						<div id="comparemachines" style="height: 300px;"></div>
+	<div class="row">
+		<div class="row col-md-12 spacer">
+			<div class="col-md-3">
+				<div class="panel panel-primary">
+					<div class="panel-heading">Top 5 Machines Worked Over The Last 7 Days</div>
+					<div class="panel-body">
+						<div class="row">
+							<div id="comparemachines" style="height: 300px;"></div>
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-		<div class="col-md-5">
-			<div class="panel panel-primary">
-				<div class="panel-heading">Top 5 Work Request Over the Last 7 Days</div>
-				<div class="panel-body">
-					<div class="row">
-						<div id="workrequests" style="height: 300px;"></div>
+			<div class="col-md-5">
+				<div class="panel panel-primary">
+					<div class="panel-heading">Top 5 Work Request Over the Last 7 Days</div>
+					<div class="panel-body">
+						<div class="row">
+							<div id="workrequests" style="height: 300px;"></div>
+						</div>
 					</div>
 				</div>
 			</div>
+			<div class="col-md-1">
+				<div class="row <?php if($row_cnt == 0){ ?> hidden <?php } ?> ">
+					<a href="myworkorders.php" class="btn btn-info btn-block">My Work Orders</a>
+				</div>
+				<div class="row <?php if($row_cnt > 0){ ?> spacer <?php } ?>">
+					<a href="requestwork.php" class="btn btn-info btn-block">Request Work</a>
+				</div>
+				<div class="row spacer">
+					<a href="openrequests.php" class="btn btn-info btn-block">Open Requests</a>
+				</div>
+				<div class="row spacer">
+					<a href="workprogress.php" class="btn btn-info btn-block">Work In Progress</a>
+				</div>
+				<div class="row spacer">
+					<a href="closedwork.php" class="btn btn-info btn-block">Closed Work</a>
+				</div>
+			</div>
 		</div>
-		<div class="col-md-1">
-			<div class="row <?php if($row_cnt == 0){ ?> hidden <?php } ?> ">
-				<a href="myworkorders.php" class="btn btn-info btn-block">My Work Orders</a>
-			</div>
-			<div class="row <?php if($row_cnt > 0){ ?> spacer <?php } ?>">
-				<a href="requestwork.php" class="btn btn-info btn-block">Request Work</a>
-			</div>
-			<div class="row spacer">
-				<a href="openrequests.php" class="btn btn-info btn-block">Open Requests</a>
-			</div>
-			<div class="row spacer">
-				<a href="workprogress.php" class="btn btn-info btn-block">Work In Progress</a>
-			</div>
-			<div class="row spacer">
-				<a href="closedwork.php" class="btn btn-info btn-block">Closed Work</a>
+	</div>
+	<div class="row">
+		<div class="row col-md-12 spacer">
+			<div class="col-md-8">
+				<div class="panel panel-primary">
+					<div class="panel-heading">Work Orders Completed</div>
+					<div class="panel-body">
+						<div class="row">
+							<div id="completedorders" style="height: 250px;"></div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -110,8 +148,10 @@ include '../includes/navbar.php';
 
 $(document).ready(function() {
 	window.data = <?php echo json_encode($data); ?>;
-	window.data2 = <?php echo json_encode($data2) ?>;
-	console.log(data2);
+	window.data2 = <?php echo json_encode($data2); ?>;
+	window.data3 = <?php echo $data3; ?>;
+	
+	console.log(data3);
 	Morris.Donut({
 		// ID of the element in which to draw the chart.
 		element: 'comparemachines',
@@ -128,6 +168,29 @@ $(document).ready(function() {
 		xkey: 'type',
 		ykeys: ['a'],
 		labels: ['Qty']
+	});
+	Morris.Line({
+		element: 'completedorders',
+		/*data: [
+    { year: '2008', value: 20 },
+    { year: '2009', value: 10 },
+    { year: '2010', value: 5 },
+    { year: '2011', value: 5 },
+    { year: '2012', value: 20 }
+  ],
+  // The name of the data record attribute that contains x-values.
+  xkey: 'year',
+  // A list of names of data record attributes that contain y-values.
+  ykeys: ['value'],
+  // Labels for the ykeys -- will be displayed when you hover over the
+  // chart.
+  labels: ['Value']
+		*/
+		data: data3,
+		xkey: 'day',
+		ykeys: ['value'],
+		labels: ['value']
+		
 	});
 	
 });

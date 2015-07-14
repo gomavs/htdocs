@@ -7,6 +7,6 @@ Known issues
 5.	Form Validation not working on requestwork.php - DONE
 7.	Finish request type on requestwork.php -DONE
 8.	Create admin pages for adding trouble types - DONE
-9.	Create alerts
+9.	Create alerts - DONE
 10.	Create user admin page - DONE
 11.	Make it so that work orders can be given an order preference.

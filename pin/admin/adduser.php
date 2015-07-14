@@ -2,11 +2,11 @@
 require '../includes/check_login.php';
 
 if(isset($_POST['submit'])){
-	//echo "test";
 	$firstname = $_POST['firstname'];
 	$lastname = $_POST['lastname'];
 	$email = $_POST['email'];
 	$mobile = $_POST['mobile'];
+	$carrier = $_POST['selectCarrier'];
 	$hashed_password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 	$department = $_POST['selectDepartment'];
 	$active = $_POST['active'];
@@ -29,9 +29,9 @@ if(isset($_POST['submit'])){
 	}else{
 		$authlevel = 0;
 	}
-	
+	$allowTexts = 1;
 	$permissions = $partCheck.",".$workCheck;	
-	mysqli_query($db,"INSERT INTO users (firstname, lastname, email, password, cell, authlevel, permissions, authTS, authWO, department, active) VALUES ('$firstname', '$lastname','$email', '$hashed_password', '$mobile', '$authlevel', '$permissions', '$tsAuthLevel', '$woAuthLevel', '$department', '$active')");
+	mysqli_query($db,"INSERT INTO users (firstname, lastname, email, password, cell, carrierId, authlevel, permissions, authTS, authWO, department, active, allowTexts) VALUES ('$firstname', '$lastname','$email', '$hashed_password', '$mobile', '$carrier', '$authlevel', '$permissions', '$tsAuthLevel', '$woAuthLevel', '$department', '$active', '$allowTexts')");
 	//header("location:listusers.php");
 }
 ?>
@@ -68,6 +68,70 @@ include '../includes/navbar.php';
 	<li><a href="useradmin.php">User Administration</a></li>
 	<li class="active">Add User</li>
 </ol>
+<!--Modal for adding new phone carrier-->
+	<div class="modal fade" id="carrierModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form class="form-horizontal" id="carrier" data-toggle="validator" role="form">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h4 class="modal-title" id="requestModalLabel">Add Phone Carrier</h4>
+					</div>
+					
+						<div class="modal-body lWellPadding">
+							<div class="row">
+								<div class="form-group">
+									<div class="col-md-3">
+										<label for="inputCarrierName" class="control-label">Carrier Name</label>
+									</div>
+									<div class="col-md-4">
+										<input type="text" class="form-control" id="inputCarrierName" name="inputCarrierName" placeholder="Carrier Name" required>
+									</div>
+									<div class="col-md-5">
+										<div class="help-block with-errors"></div>
+									</div>
+								</div>
+							</div>
+							<div class="row">
+								<div class="form-group">
+									<div class="col-md-3">
+										<label for="inputCarrierSuffix" class="control-label">Carrier Suffix</label>
+									</div>
+									<div class="col-md-4">
+										<div class="input-group">
+											<span class="input-group-addon" id="basic-addon1">@</span>
+											<input type="text" class="form-control" id="inputCarrierSuffix" name="inputCarrierSuffix" placeholder="Carrier Suffix" aria-describedby="basic-addon1" required>
+										</div>
+									</div>
+									<div class="col-md-5">
+										<div class="help-block with-errors"></div>
+									</div>
+								</div>
+							</div>
+							<div class="row">
+								<div class="form-group">
+									<div class="col-md-3">
+										<label for="inputCarrierRule class="control-label">Carrier Rule</label>
+									</div>
+									<div class="col-md-3">
+										<div class="input-group">
+											<input type="text" class="form-control" id="inputCarrierRule" name="inputCarrierRule" aria-describedby="basic-addon1" value="10" required>
+											<span class="input-group-addon" id="basic-addon1">digits</span>
+										</div>
+									</div>
+								</div>
+							</div>
+							
+						</div>
+					
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+						<input class="btn btn-primary" type="submit" value="Add Carrier" id="addCarrier">
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
 <div class="container-fluid">
 	<div class="panel panel-primary">
 		<div class="panel-heading">Add User</div>
@@ -76,7 +140,7 @@ include '../includes/navbar.php';
 				<div class ="col-md-1 pull-right"><a href="listusers.php" ><button type="button" class="btn btn-primary btn-sm">List Users</button></a></div>
 				<div class ="col-md-1 pull-right"><a href="edituser.php" ><button type="button" class="btn btn-primary btn-sm">Edit Users</button></a></div>
 			</div>
-			<form role="form" method="post" id="add">
+			<form method="post" id="addUser">
 				<div class="row col-md-12">
 					<div class="col-md-4">
 						<div class="row spacer">
@@ -84,83 +148,150 @@ include '../includes/navbar.php';
 								<div class="panel panel-heading">Pesonal Information</div>
 								<div class="panel-body">
 									<input type="hidden" name="id" value=""/>
-									<div class="col-md-6">
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="inputFirstName" class="control-label">First Name</label></div>
-												<div class="col-md-12"><input type="text" class="form-control" id="inputFirstName" name="firstname" placeholder="First Name" tabindex="1" required></div>
+									<div class="col-md-12">
+										<div class="row">
+											<div class="col-md-6 rWellPadding">
+												<div class="form-group">
+													<div class="row">
+														<label for="inputFirstName" class="control-label">First Name</label>
+													</div>
+													<div class="row">
+														<input type="text" class="form-control" id="inputFirstName" name="firstname" placeholder="First Name" minlength="3" tabindex="1">
+													</div>
+												</div>
 											</div>
-										</div>
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="email" class="control-label">Email</label></div>
-												<div class="col-md-12"><input type="email" class="form-control" id="email" name="email" placeholder="Email" tabindex="3" required></div>
-												
-											</div>
-										</div>
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="inputPassword" class="control-label">Password</label></div>
-												<div class="col-md-12"><input type="password" data-minlength="5" class="form-control" id="inputPassword" name="password" placeholder="Password" tabindex="5" required></div>
-											</div>
-										</div>
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="selectDepartment" class="control-label">Department</label></div>
-												<div class="col-md-12">
-													<select id="selectDepartment" name="selectDepartment" class="form-control" required>
-														<option value="" disabled selected>--Choose Department--</option>
-														<option value="100">Mill</option>
-														<option value="200">QC-Boxing</option>
-														<option value="300">Laminate</option>
-														<option value="400">Assembly</option>
-														<option value="450">Prototypes/Projects</option>
-														<option value="500">Shipping</option>
-														<option value="550">Receiving</option>
-														<option value="575">Warehouse</option>
-														<option value="600">Maintenance</option>
-														<option value="700">Engineering Admin</option>
-														<option value="701">Engineering</option>
-														<option value="702">Design</option>
-														<option value="703">HR</option>
-														<option value="704">Accounting</option>
-														<option value="705">IT</option>
-														<option value="706">Purchasing</option>
-														<option value="707">Sales</option>
-														<option value="708">Customer Service/General</option>
-														<option value="710">Executive</option>
-														<option value="712">Shop Supervisors</option>
-													</Select>
+											<div class="col-md-6">
+												<div class="form-group">
+													<div class="row">
+														<label for="inputLastName" class="control-label">Last Name</label>
+													</div>
+													<div class="row">
+														<input type="text" class="form-control" id="inputLastName" name="lastname" placeholder="Last Name" minlength="3" tabindex="2">
+													</div>
 												</div>
 											</div>
 										</div>
-									</div>
-									<div class="col-md-6">
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="inputLastName" class="control-label">Last Name</label></div>
-												<div class="col-md-12"><input type="text" class="form-control" id="inputLastName" name="lastname" placeholder="Last Name" tabindex="2" required></div>
+										<div class="row">
+											<div class="col-md-6 rWellPadding">
+												<div class="form-group">
+													<div class="row">
+														<label for="email" class="control-label">Email</label>
+													</div>
+													<div class="row">
+														<input type="email" class="form-control" id="email" name="email" placeholder="Email" tabindex="3">
+													</div>
+												</div>
 											</div>
 										</div>
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="inputMobile" class="control-label">Mobile Number</label></div>
-												<div class="col-md-12"><input type="text" class="form-control" id="inputMobile" name="mobile" placeholder="Mobile Number" tabindex="4"></div>
+										<div class="row">
+											<div class="col-md-6 rWellPadding">
+												<div class="form-group">
+													<div class="row">
+														<label for="inputPassword" class="control-label">Password</label>
+													</div>
+													<div class="row">
+														<input type="password" data-minlength="5" class="form-control" id="inputPassword" name="password" placeholder="Password" tabindex="4">
+													</div>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="form-group">
+													<div class="row">
+														<label for="inputPasswordConfirm" class="control-label">Confirm Password</label>
+													</div>
+													<div class="row">
+														<input type="password" class="form-control" id="inputPasswordConfirm" name="confirmPassword" data-match="#inputPassword" data-match-error="Whoops, these don't match" placeholder="Confirm Password" tabindex="5">
+													</div>
+													
+														<!--<di class="help-block with-errors">-->
+												</div>
 											</div>
 										</div>
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="inputPasswordConfirm" class="control-label">Confirm Password</label></div>
-												<div class="col-md-12"><input type="password" class="form-control" id="inputPasswordConfirm" name="confirmPassword" data-match="#inputPassword" data-match-error="Whoops, these don't match" placeholder="Confirm Password" tabindex="6" required></div>
-												<div class="col-md-12"><div class="help-block with-errors"></div></div>
+										<div class="row">
+											<div class="col-md-6 rWellPadding">
+												<div class="form-group">
+													<div class="row">
+														<label for="inputMobile" class="control-label">Mobile Number</label>
+													</div>
+													<div class="row">
+														<input type="text" class="form-control" id="inputMobile" name="mobile" placeholder="Mobile Number" tabindex="6">
+													</div>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="form-group">
+													<div class="row">
+														<label for="inputLastName" class="control-label">Carrier</label>
+													</div>
+													<div class="row">
+														<div class="col-md-10 leftPull">
+														<select class="form-control" id="selectCarrier" name="selectCarrier" placeholder="Last Name" tabindex="7">
+															<option value="" disabled selected>--Choose Carrier--</option>
+															<?php
+															$query = $db->prepare("SELECT * FROM smsaddress ORDER BY carrier ASC");
+															$query->execute();
+															$result = $query->get_result();
+															while (($row = $result->fetch_object()) !== NULL) {
+															?>
+																<option value="<?php echo $row->id ?>"><?php echo $row->carrier ?></option>
+															<?php
+															}
+															?>
+														</select>
+														</div>
+														<div class="col-md-2 leftPull">
+														<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#carrierModal" aria-label="Add">
+															<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+														</button>
+														</div>
+													</div>
+												</div>
 											</div>
 										</div>
-										<div class="form-group">
-											<div class="row ">
-												<div class="col-md-12"><label for="active" class="control-label">Active</label></div>
-												<div class="radio">
-													<label class="col-md-4"><input type="radio" name="active" value="1" tabindex="7" required checked>Yes</label>
-													<label><input type="radio" name="active" value="0" tabindex="8" required>No</label>
+										<div class="row">
+											<div class="col-md-6 rWellPadding">
+												<div class="form-group">
+													<div class="row">
+														<label for="selectDepartment" class="control-label">Department</label>
+													</div>
+													<div class="row">
+														<select id="selectDepartment" name="selectDepartment" class="form-control" tabindex="8">
+															<option value="" disabled selected>--Choose Department--</option>
+															<option value="100">Mill</option>
+															<option value="200">QC-Boxing</option>
+															<option value="300">Laminate</option>
+															<option value="400">Assembly</option>
+															<option value="450">Prototypes/Projects</option>
+															<option value="500">Shipping</option>
+															<option value="550">Receiving</option>
+															<option value="575">Warehouse</option>
+															<option value="600">Maintenance</option>
+															<option value="700">Engineering Admin</option>
+															<option value="701">Engineering</option>
+															<option value="702">Design</option>
+															<option value="703">HR</option>
+															<option value="704">Accounting</option>
+															<option value="705">IT</option>
+															<option value="706">Purchasing</option>
+															<option value="707">Sales</option>
+															<option value="708">Customer Service/General</option>
+															<option value="710">Executive</option>
+															<option value="712">Shop Supervisors</option>
+														</Select>
+													</div>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<div class="form-group">
+													<div class="row">
+														<label for="active" class="control-label">Active</label>
+													</div>
+													<div class="row">
+														<div class="radio">
+															<label class="col-md-4"><input type="radio" name="active" value="1" tabindex="9" checked>Yes</label>
+															<label><input type="radio" name="active" value="0" tabindex="8">No</label>
+														</div>
+													</div>
 												</div>
 											</div>
 										</div>
@@ -230,13 +361,16 @@ include '../includes/navbar.php';
 				</div>
 			</form>
 		</div>
-	</div>
+	</div>	
 </div>
+
+	
 <!-- Bootstrap core JavaScript
 ================================================== -->
 <!-- Placed at the end of the document so the pages load faster -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 <script src="../js/bootstrap.min.js"></script>
+<script src="../js/jquery.validate.js"></script>
 <script src="../js/validator.js"></script>
 <script src="../js/jquery-ui.js"></script>
 <script>
@@ -261,31 +395,12 @@ include '../includes/navbar.php';
 		} else {
 			$("#superCheck").prop("disabled", true);
 		};
-		$('#add').validator({
-			fields: {
-				email: {
-					validators: {
-						notEmpty:{
-							message: 'Email field required and cannot be empty'
-						},
-						emailAddress:{
-							message: 'The value is not a valid email address'
-						},
-						remote: {
-							type: 'GET',
-							url: '../ajax/check-email.php',
-							data: function(validator){
-								return {
-									'email': validator.getElementById('email')
-								};
-							},
-							message: 'The email address is available'
-						}
-					}
-					
-				}
-			}
+		//Add User form validation
+		$("#addUser").validator({
+			
 		});
+
+		
 	});
 
 	

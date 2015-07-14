@@ -52,7 +52,7 @@ include '../includes/navbar.php';
 						<th>Item</th>
 						<th>Description</th>
 						<th>Request Date</th>
-						<th>Request Time</th>
+						<th>End Date</th>
 						<th>Requested By</th>
 						<th>Priority</th>
 						<th>Command</th>
@@ -103,7 +103,7 @@ include '../includes/navbar.php';
 				{ "data": "Item", "sWidth": "10%" },
 				{ "data": "Description", "sWidth": "25%" },
 				{ "data": "Request Date", "sWidth": "10%" },
-				{ "data": "Request Time", "sWidth": "10%" },
+				{ "data": "End Date", "sWidth": "10%" },
 				{ "data": "Requested By", "sWidth": "10%" },
 				{ "data": "Priority", "sWidth": "10%"},
 				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){

@@ -1,5 +1,10 @@
 <?php
 require '../includes/check_login.php';
+if(isset($_GET['alert'])){
+	$query = $db->prepare("UPDATE messages SET viewed = 1 WHERE id = ? ");
+	$query->bind_param("i",$_GET['alert']);
+	$query->execute();
+}
 if(isset($_GET['id'])){
 	$workOrderId = $_GET['id'];
 	if(isset($_POST['workDone'])){
@@ -43,6 +48,7 @@ if(isset($_GET['id'])){
 	$endDate = $row['endDate'];
 	$timeEstimate = secondsToTime($row['timeEstimate']);
 	list($days, $hrs, $mins) = explode(",", $timeEstimate);
+	$issue = $row['issue'];
 	$notes = $row['notes'];
 	$status = $row['status'];
 	$query = $db->prepare("SELECT * FROM workrequest WHERE id = ?");
@@ -62,6 +68,7 @@ if(isset($_GET['id'])){
 	$machine_name = "";
 	$serial = "";
 	$item_list = "";
+	$issue_list = "";
 	$workItem = "Item:";
 	//Request type Select Dropdown
 	$type_list = "";
@@ -93,6 +100,7 @@ if(isset($_GET['id'])){
 				$item_list = $item_list."<option value=\"".$row->id."\">Center".$row->center."&nbsp;&nbsp;".$row->name."</option>";
 			}	
 		}
+		
 	}elseif($workTypeId == 2){
 		$workType = "Facility";
 		$query = $db->prepare("SELECT * FROM facilitytype WHERE active = 1 ORDER BY id ASC");
@@ -137,6 +145,25 @@ if(isset($_GET['id'])){
 		$workType = "Other";
 		$workCenter = $other;
 	}
+	//Find issues for selected workType
+	/*
+	$query = $db->prepare("SELECT workcenter.id, workcenter.center, workcenter.name, COUNT(workorder.id) as c FROM workorder LEFT JOIN workcenter ON workorder.workcenterId = workcenter.id 
+	WHERE workorder.startDate >= ? AND workorder.status=1 GROUP BY workcenter.id ORDER BY c DESC LIMIT 5 ");
+	$query->bind_param("i", $requestedBy);
+	$query->execute();
+	$result = $query->get_result();
+	while (($row = $result->fetch_object()) !== NULL) {
+		if($row->id == $itemId){
+			$workCenter = $row->center;
+			$hidden = "";
+			$machine_name = $row->name;
+			$serial = $row->serial;
+			$item_list = $item_list."<option value=\"".$row->id."\" selected>Center ".$row->center."&nbsp;&nbsp;".$row->name."</option>";
+		}else{
+			$item_list = $item_list."<option value=\"".$row->id."\">Center".$row->center."&nbsp;&nbsp;".$row->name."</option>";
+		}	
+	}
+	*/
 	// Requested By
 	$query = $db->prepare("SELECT firstname, lastname FROM users WHERE id = ?");
 	$query->bind_param("i", $requestedBy);
@@ -265,7 +292,9 @@ if(isset($_GET['id'])){
 			}
 		}
 		$topPane = "<div class=\"tab-pane pane-".$userId." ".$paneActive."\" id=\"".$userId."\"><div class=\"row col-md-12 spacer\">".$myForm."<div class=\"col-md-6 rWellPadding\">";
-		$topPane .= "<div class=\"row\"><div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-2\"><label>Work Done:</label></div><div class=\"col-md-8\">";
+		$topPane .= "<div class=\"row\"><div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-2\"><label>Issue:</label></div><div class=\"col-md-3\"> ";
+		$topPane .= "<select id=\"selectIssue\" name=\"selectIssue\" class=\"form-control\"><option value=\"0\">-- Choose Issue --</option>".$type_list."</select></div></div>";
+		$topPane .= "<div class=\"row spacer\"><div class=\"col-md-2\"><label>Work Done:</label></div><div class=\"col-md-8\">";
 		$topPane .= "<textarea class=\"form-control\"".$workName." id=\"workDone\" rows=\"8\" ".$myWork.">".$workDone."</textarea></div>";
 		$topPane .= "<div class=\"col-md-2\">".$workButton."</div></div></div></div></div>".$myFormClose."<div class=\"col-md-6 lWellPadding\" ><div class=\"row\">";
 		$topPane .= "<div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-1 col-md-offset-11\">";
@@ -467,21 +496,25 @@ include '../includes/navbar.php';
 										</button>
 									</div>
 								</div>
-								<div class="row">
-									<div class="col-md-7"><label>Completed:</label></div>
-									<div class="col-md-3"><small><?php echo $workCompleted; ?></small></div>
+								<div class="row spacer">
+									<div class="col-md-6"><label>Issue:</label></div>
+									<div class="col-md-6"><select id="selectRequestType" name="selectRequestType" class="form-control"><option value="0">-- Choose Type --</option><?php echo $type_list; ?></select></div>
 								</div>
 								<div class="row">
-									<div class="col-md-7"><label>Total Hours:</label></div>
-									<div class="col-md-5" id="totalHours"><small><?php echo $totalTime; ?></small></div>
+									<div class="col-md-6"><label>Completed:</label></div>
+									<div class="col-md-6"><small><?php echo $workCompleted; ?></small></div>
 								</div>
 								<div class="row">
-									<div class="col-md-7"><label>Parts Required:</label></div>
-									<div class="col-md-5"><small>N/A</small></div>
+									<div class="col-md-6"><label>Total Hours:</label></div>
+									<div class="col-md-6" id="totalHours"><small><?php echo $totalTime; ?></small></div>
 								</div>
 								<div class="row">
-									<div class="col-md-7"><label>Parts Cost:</label></div>
-									<div class="col-md-5"><small>N/A</small></div>
+									<div class="col-md-6"><label>Parts Required:</label></div>
+									<div class="col-md-6"><small>N/A</small></div>
+								</div>
+								<div class="row">
+									<div class="col-md-6"><label>Parts Cost:</label></div>
+									<div class="col-md-6"><small>N/A</small></div>
 								</div>
 							</div>
 						</div>								
@@ -1055,10 +1088,11 @@ include '../includes/navbar.php';
 		});
 		//Complete work
 		$( ".complete_work" ).on( "click", "[id=workCompleted]", function() {
-			
+			$(".complete_work").addClass("hidden");
 			var request = $.getJSON("../ajax/completework.php", {id : workOrderId, user : user_id}, function(data) {
 				console.log(data);
-				$(".complete_work").addClass("hidden");
+				//alert("Message sent");
+				
 				
 			});
 		});

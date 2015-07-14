@@ -1,5 +1,6 @@
 <?php
 require '../includes/check_login.php';
+include '../includes/systems.php';
 $type_list = "<option value=\"\" disabled selected>-- Choose Type --</option>";
 $query = $db->prepare("SELECT * FROM worktypes ORDER BY id ASC");
 $query->execute();
@@ -15,6 +16,7 @@ if (isset( $_POST[ 'submit' ] ) ) {
 	$selectPriority = $_POST['selectPriority'];
 	$textDescription = $_POST['textDescription'];
 	$message = "";
+	$inputOther = "";
 	switch($requestType){
 		case 1:
 			$itemId = $_POST['selectMachine'];
@@ -24,27 +26,43 @@ if (isset( $_POST[ 'submit' ] ) ) {
 			$result1 = $query1->get_result();
 			$row1 = $result1->fetch_assoc();
 			$message = "A new work request has been issued for <b>Center ".$row1['center']." ".$row1['name']."</b>";
-			
 			break;
 		case 2:
 			$itemId = $_POST['selectFacility'];
+			$query1 = $db->prepare("SELECT item FROM facilitytype WHERE id = ?");
+			$query1->bind_param("i", $itemId);
+			$query1->execute();
+			$result1 = $query1->get_result();
+			$row1 = $result1->fetch_assoc();
+			$message = "A new work request has been issued for <b>".$row1['item']."</b>";
 			break;
 		case 3:
 			$itemId = $_POST['selectSafety'];
+			$query1 = $db->prepare("SELECT item FROM safetytype WHERE id = ?");
+			$query1->bind_param("i", $itemId);
+			$query1->execute();
+			$result1 = $query1->get_result();
+			$row1 = $result1->fetch_assoc();
+			$message = "A new work request has been issued for <b>".$row1['item']."</b>";
 			break;
 		case 4:
 			$itemId = $_POST['selectTool'];
+			$query1 = $db->prepare("SELECT item FROM toolstype WHERE id = ?");
+			$query1->bind_param("i", $itemId);
+			$query1->execute();
+			$result1 = $query1->get_result();
+			$row1 = $result1->fetch_assoc();
+			$message = "A new work request has been issued for <b>".$row1['item']."</b>";
 			break;
-		case 5: $itemId = 0;
+		case 5: 
+			$itemId = 0;
+			$inputOther = $_POST['inputOther'];
+			$message = "A new work request has been issued for <b>".$_POST['inputOther']."</b>";
+			
 			break; 
 		default : $itemId = 0;
 	}
-	if(isset($_POST['inputOther'])){
-		$inputOther = $_POST['inputOther'];
-		//$message = $inputOther;
-	}else{
-		$inputOther = "";
-	}
+
 	$date = new DateTime();
 	$timestamp = $date->getTimestamp();
 	$requestedBy = $_SESSION['user_id'];
@@ -62,7 +80,12 @@ if (isset( $_POST[ 'submit' ] ) ) {
 		$query1 = $db->prepare("INSERT INTO messages (msgTo, msgFrom, priority, date, viewed, message, link) VALUES (?, ?, ?, ?, ?, ?, ?)");
 		$query1->bind_param('iiiiiss', $row->id, $requestedBy, $selectPriority, $timestamp, $viewed, $message, $link);
 		$query1->execute();
+		//echo $db->insert_id;
+		sendAlert($db->insert_id);
+		
 	}
+	
+	
 	header('location: openrequests.php');
 }
 ?>
