@@ -80,7 +80,7 @@ include '../includes/navbar.php';
 															<table id="clickableRow">
 																<tbody id="remove">
 																<?php
-																$query = $db->prepare("SELECT * FROM machineproblems WHERE active = 1 ORDER BY problem ASC");
+																$query = $db->prepare("SELECT * FROM problemlist WHERE workTypeId = 1 AND active = 1 ORDER BY problem ASC");
 																$query->execute();
 																$result = $query->get_result();
 																while (($row = $result->fetch_object()) !== NULL) {
@@ -105,10 +105,11 @@ include '../includes/navbar.php';
 													<div class="panel-body panel-fixed">
 														<form class="machines" name="machines">
 															<input type="hidden" id="problemId" name="problemId" value="">
+															<input type="hidden" name="workType" value="1">
 															<?php
 															$i = 1;
 															$j = 0;
-															$query = $db->prepare("SELECT * FROM workcenter ORDER BY center ASC");
+															$query = $db->prepare("SELECT * FROM workcenter WHERE inservice = 1 ORDER BY center ASC");
 															$query->execute();
 															$result = $query->get_result();
 															$row_cnt = mysqli_num_rows($result);
@@ -122,7 +123,7 @@ include '../includes/navbar.php';
 																	}
 															?>
 																<div class="row">
-																	<div class="checkbox"><label><input type="checkbox" name="check_list[]" value="<?php echo $row->id ?>">Center <?php echo $row->center; ?>&nbsp;&nbsp;<?php echo $row->name; ?></label></div>
+																	<div class="checkbox"><label><input class="mCheckbox" type="checkbox" name="check_list[]" value="<?php echo $row->id ?>">Center <?php echo $row->center; ?>&nbsp;&nbsp;<?php echo $row->name; ?></label></div>
 																</div>
 															<?php
 																	if($i == 10){
@@ -150,7 +151,7 @@ include '../includes/navbar.php';
 									<div class="row LbtnMargin">
 										<div class="form-group">
 											<div class="col-md-2 col-md-offset-4">
-												<div class="checkbox"><label><input type="checkbox" id="checkAll" name="checkAll" value="1">Check all</label></div>
+												<div class="checkbox"><label><input type="checkbox" id="checkAll" name="checkAll">Check all</label></div>
 											</div>
 											<button class="btn btn-primary" type="submit" id="saveChanges">Save Changes</button>
 										</div>
@@ -191,12 +192,12 @@ include '../includes/navbar.php';
 															<table id="clickableRowFacility">
 																<tbody id="removeFacility">
 																<?php
-																$query = $db->prepare("SELECT * FROM facilitytype WHERE active = 1 ORDER BY item ASC");
+																$query = $db->prepare("SELECT * FROM problemlist WHERE workTypeId = 2 AND active = 1 ORDER BY problem ASC");
 																$query->execute();
 																$result = $query->get_result();
 																while (($row = $result->fetch_object()) !== NULL) {
 																?>	
-																	<tr id="<?php echo $row->id; ?>"><td><?php echo $row->item; ?></td></tr>
+																	<tr id="<?php echo $row->id; ?>"><td><?php echo $row->problem; ?></td></tr>
 																<?php
 																}
 																?>
@@ -206,6 +207,65 @@ include '../includes/navbar.php';
 													</div>
 												</div>
 											</div>
+										</div>
+										<div class="col-md-8">
+											<div class="form-group">
+												<div class="row leftPush">
+													<label for="check_list2[]" class="control-label">Facility Items</label>
+												</div>
+												<div class="panel panel-primary" id="facilityList">
+													<div class="panel-body panel-fixed">
+														<form class="facility" name="facility">
+															<input type="hidden" id="facilityProblemId" name="problemId" value="">
+															<input type="hidden" name="workType" value="2">
+															<?php
+															$i = 1;
+															$j = 0;
+															$query = $db->prepare("SELECT * FROM facilitytype WHERE active = 1 ORDER BY item ASC");
+															$query->execute();
+															$result = $query->get_result();
+															$row_cnt = mysqli_num_rows($result);
+															while (($row = $result->fetch_object()) !== NULL) {
+																$j++;
+																if($i <= 10){
+																	if($i == 1){
+																	?>
+																		<div class="col-md-3">
+																	<?php
+																	}
+															?>
+																<div class="row">
+																	<div class="checkbox"><label><input class="fCheckbox" type="checkbox" name="check_list[]" value="<?php echo $row->id ?>"><?php echo $row->item; ?></label></div>
+																</div>
+															<?php
+																	if($i == 10){
+																		$i = 1;
+																	?>	
+																		</div>
+																	<?php
+																	}else{
+																		$i++;
+																	}
+																}
+																if($j == $row_cnt){
+																	?>
+																	</div>
+																	<?php
+																}
+															}
+															?>
+														</form>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="row LbtnMargin">
+										<div class="form-group">
+											<div class="col-md-2 col-md-offset-4">
+												<div class="checkbox"><label><input type="checkbox" id="facilityCheckAll" name="facilityCheckAll">Check all</label></div>
+											</div>
+											<button class="btn btn-primary" type="submit" id="facilitySaveChanges">Save Changes</button>
 										</div>
 									</div>
 								</div>
@@ -336,9 +396,12 @@ include '../includes/navbar.php';
 
 $(document).ready(function() {
 	$("#machineList :input").attr("disabled", true);
+	$("#facilityList :input").attr("disabled", true);
 	$("#checkAll").attr("disabled", true);
+	$("#facilityCheckAll").attr("disabled", true);
+	//Clickable Row Machines
 	$('#clickableRow').on('click', 'tr',function(){
-		$('input:checkbox').prop('checked', false);
+		$('.machines input:checkbox').prop('checked', false);
 		var rowId = this.id;
 		var selected = $(this).hasClass("highlight");
 		$("#clickableRow tr").removeClass("highlight");
@@ -348,30 +411,78 @@ $(document).ready(function() {
 		//$('input:checkbox').prop('checked', false);
 		//$('input:checkbox').not(this).prop('checked', this.checked);
 		if(!selected){
+			$("#checkAll").prop('checked', false);
 			$(this).addClass("highlight");
 			$("#machineList :input").attr("disabled", false);
 			$("#checkAll").attr("disabled", false);
 			$("#problemId").val(rowId);
 			var request = $.getJSON("../ajax/retrievechecks.php", {id : rowId}, function(data) {
 				console.log(data);
-				//data = JSON.parse(data);
 				$.each(data, function(i,item) {
-					$("input:checkbox[value=" + item.machineId + "]").prop('checked', true);
+					$(".machines input:checkbox[value=" + item.machineId + "]").prop('checked', true);
 					
 				});
 			});
 		}
 	});
-	//Check all the check boxes 
-	$("#checkAll").click(function () {
-		$('input:checkbox').not(this).prop('checked', this.checked);
+	//Clickable Row Facility
+	$('#clickableRowFacility').on('click', 'tr',function(){
+		$('.facility input:checkbox').prop('checked', false);
+		var rowId = this.id;
+		var selected = $(this).hasClass("highlight");
+		$("#clickableRowFacility tr").removeClass("highlight");
+		$("#facilityList :input").attr("disabled", true);
+		$("#facilityCheckAll").attr("disabled", true);
+		$("#facilityProblemId").val("");
+		if(!selected){
+			$("#facilityCheckAll").prop('checked', false);
+			$(this).addClass("highlight");
+			$("#facilityList :input").attr("disabled", false);
+			$("#facilityCheckAll").attr("disabled", false);
+			$("#facilityProblemId").val(rowId);
+			var request = $.getJSON("../ajax/retrievechecks.php", {id : rowId}, function(data) {
+				console.log(data);
+				$.each(data, function(i,item) {
+					$(".facility input:checkbox[value=" + item.machineId + "]").prop('checked', true);
+					
+				});
+			});
+		}
 	});
-	//submit new problem
+	
+	//Check all machine check boxes  
+	$("#checkAll").click(function () {
+		//$('input:checkbox').not(this).prop('checked', this.checked);
+		if(this.checked){
+			$('.mCheckbox').each(function(){
+				this.checked = true;
+			})
+		}else{
+			$('.mCheckbox').each(function(){
+				this.checked = false;
+			})
+		}
+		
+	});
+	//Check all facility check boxes
+	$("#facilityCheckAll").click(function () {
+		if(this.checked){
+			$('.fCheckbox').each(function(){
+				this.checked = true;
+			})
+		}else{
+			$('.fCheckbox').each(function(){
+				this.checked = false;
+			})
+		}
+	});
+	//submit new machine problem
 	$("#addProblem").click(function() {
 		var problem = $("#newProblem").val();
 		var probLength = problem.length;
+		var workType = 1;
 		if(probLength >= 5){
-			var request = $.getJSON("../ajax/machineproblem.php", {type : problem}, function(data) {
+			var request = $.getJSON("../ajax/machineproblem.php", {type : problem, workTypeId : workType}, function(data) {
 				console.log(data);
 				$("#newProblem").val("");
 				$("#remove").remove();
@@ -389,7 +500,32 @@ $(document).ready(function() {
 			});
 		}
 	});
-	//Submit checked items
+	//Submit new facility problem
+	$("#addFacilityProblem").click(function() {
+		var facilityProblem = $("#newFacilityProblem").val();
+		var facilityProbLength = facilityProblem.length;
+		var workType = 2;
+		if(facilityProbLength >= 5){
+			var request = $.getJSON("../ajax/machineproblem.php", {type : facilityProblem, workTypeId : workType}, function(data) {
+				console.log(data);
+				$("#newFacilityProblem").val("");
+				$("#removeFacility").remove();
+				$('#clickableRowFacility').append("<tbody id=\"removeFacility\"></tbody>");
+				$.each(data, function(i,item) {
+					//$('#removeFacility').append( "<tr id=" + item.id + "><td>" + item.problem + "</td></tr>");
+					if(item.problem == facilityProblem){
+						$('#removeFacility').append( "<tr id=" + item.id + " class=\"highlight\"><td>" + item.problem + "</td></tr>");
+						$("#machineList :input").attr("disabled", false);
+						$("#checkAll").attr("disabled", false);
+					}else{
+						$('#removeFacility').append( "<tr id=" + item.id + "><td>" + item.problem + "</td></tr>");
+						//alert("test");
+					}
+				});
+			});
+		}
+	});	
+	//Submit machine checked items
 	$("button#saveChanges").click(function(){
 		$.ajax({
 			type: "POST",
@@ -400,19 +536,7 @@ $(document).ready(function() {
 				alert("Changes Saved");
 				//data = jQuery.parseJSON(data);
 				/*$.each(data, function(key, value) {
-					$("#due_date").html("<small>" + value.due_date + "</small>");
-					$("#estimated_time").html("<small>" + value.estimated_time + "</small>");
-					$("#approval_notes").html(value.approval_notes);
-					$(".assignment").remove();
-					$("#assigned_job").append("<div class=\"assignment\"></div>");
-					$.each(value.selected_users, function(j, id){
-						//updated displayed users on work order
-						var a = "<div class=\"row\"><div class=\"col-md-5\"><small>" + id.firstname + " " + id.lastname + "</small></div></div>";
-						$(".assignment").append(a);
-					});
-					
-					
-					
+						
 				});*/
 			},
 			error: function(){
@@ -420,30 +544,28 @@ $(document).ready(function() {
 			}
 		});
 	});
-	//Submit new facility problem
-	$("#addFacilityProblem").click(function() {
-		var facilityProblem = $("#newFacilityProblem").val();
-		var facilityProbLength = facilityProblem.length;
-		if(facilityProbLength >= 5){
-			var request = $.getJSON("../ajax/facilityproblem.php", {type : facilityProblem}, function(data) {
+	//Submit facility checked items
+	$("button#facilitySaveChanges").click(function(){
+		$.ajax({
+			type: "POST",
+			url: "../ajax/updateproblems.php",
+			data: $('form.facility').serialize(),
+			success: function(data){
 				console.log(data);
-				$("#newFacilityProblem").val("");
-				$("#removeFacility").remove();
-				$('#clickableRowFacility').append("<tbody id=\"removeFacility\"></tbody>");
-				$.each(data, function(i,item) {
-					$('#removeFacility').append( "<tr id=" + item.id + "><td>" + item.problem + "</td></tr>");
-					/*if(item.problem == facilityProblem){
-						$('#removeFacility').append( "<tr id=" + item.id + " class=\"highlight\"><td>" + item.problem + "</td></tr>");
-						$("#machineList :input").attr("disabled", false);
-						$("#checkAll").attr("disabled", false);
-					}else{
-						$('#removeFacility').append( "<tr id=" + item.id + "><td>" + item.problem + "</td></tr>");
-					}*/
-				});
-				
-			});
-		}
+				alert("Changes Saved");
+				//data = jQuery.parseJSON(data);
+				/*$.each(data, function(key, value) {
+						
+				});*/
+			},
+			error: function(){
+				alert("failure");
+			}
+		});
 	});
+	
+	
+	
 	//Submit new safety problem
 	$("#addSafetyProblem").click(function() {
 		var safetyProblem = $("#newSafetyProblem").val();

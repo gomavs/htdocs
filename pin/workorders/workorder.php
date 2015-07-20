@@ -50,6 +50,9 @@ if(isset($_GET['id'])){
 	list($days, $hrs, $mins) = explode(",", $timeEstimate);
 	$issue = $row['issue'];
 	$notes = $row['notes'];
+	if($row['down'] == 1){
+		
+	}
 	$status = $row['status'];
 	$query = $db->prepare("SELECT * FROM workrequest WHERE id = ?");
 	$query->bind_param("i", $workRequestId);
@@ -70,6 +73,8 @@ if(isset($_GET['id'])){
 	$item_list = "";
 	$issue_list = "";
 	$workItem = "Item:";
+	$workClosed = "";
+	$showDown = "hidden";
 	//Request type Select Dropdown
 	$type_list = "";
 	$query = $db->prepare("SELECT * FROM worktypes ORDER BY id ASC");
@@ -86,6 +91,7 @@ if(isset($_GET['id'])){
 	if($workTypeId == 1){
 		$workType = "Machine";
 		$workItem = "Work Center:";
+		$showDown = "";
 		$query = $db->prepare("SELECT * FROM workcenter ORDER BY center ASC");
 		$query->execute();
 		$result = $query->get_result();
@@ -146,24 +152,20 @@ if(isset($_GET['id'])){
 		$workCenter = $other;
 	}
 	//Find issues for selected workType
-	/*
-	$query = $db->prepare("SELECT workcenter.id, workcenter.center, workcenter.name, COUNT(workorder.id) as c FROM workorder LEFT JOIN workcenter ON workorder.workcenterId = workcenter.id 
-	WHERE workorder.startDate >= ? AND workorder.status=1 GROUP BY workcenter.id ORDER BY c DESC LIMIT 5 ");
-	$query->bind_param("i", $requestedBy);
+	$query = $db->prepare("SELECT problems.id as table1id, problems.problemId, problemlist.id as table2id, problemlist.problem FROM problems LEFT JOIN problemlist ON problems.problemId = problemlist.id WHERE problems.problemType = ? AND problems.itemId = ? AND problems.active = 1 ORDER BY problemlist.problem ASC");
+	$query->bind_param("ii", $workTypeId, $itemId);
 	$query->execute();
 	$result = $query->get_result();
 	while (($row = $result->fetch_object()) !== NULL) {
-		if($row->id == $itemId){
-			$workCenter = $row->center;
-			$hidden = "";
-			$machine_name = $row->name;
-			$serial = $row->serial;
-			$item_list = $item_list."<option value=\"".$row->id."\" selected>Center ".$row->center."&nbsp;&nbsp;".$row->name."</option>";
+		if($row->table1id == $issue){
+			$problem = $row->problem;
+			//echo "test";
+			$issue_list = $issue_list."<option value=\"".$row->table2id."\" selected>".$row->problem."</option>";
 		}else{
-			$item_list = $item_list."<option value=\"".$row->id."\">Center".$row->center."&nbsp;&nbsp;".$row->name."</option>";
+			//echo "test2";
+			$issue_list = $issue_list."<option value=\"".$row->table2id."\">".$row->problem."</option>";
 		}	
 	}
-	*/
 	// Requested By
 	$query = $db->prepare("SELECT firstname, lastname FROM users WHERE id = ?");
 	$query->bind_param("i", $requestedBy);
@@ -230,7 +232,6 @@ if(isset($_GET['id'])){
 	$startRunner = [];
 	$openWorkTimeId = "";
 	$completePane = "";
-	
 	$query = $db->prepare("SELECT * FROM workdata WHERE workOrderId = ?");
 	$query->bind_param("i", $workOrderId);
 	$query->execute();
@@ -291,12 +292,21 @@ if(isset($_GET['id'])){
 				$startButton = "<button id=\"startTimer-".$userId."\" type=\"button\" class=\"btn btn-success btn-xs\" disabled>Start</button>";
 			}
 		}
+		if($status == 1){
+			$workClosed = "hidden";
+			$workDisabled = "disabled";
+			$myWork = "disabled";
+		}
 		$topPane = "<div class=\"tab-pane pane-".$userId." ".$paneActive."\" id=\"".$userId."\"><div class=\"row col-md-12 spacer\">".$myForm."<div class=\"col-md-6 rWellPadding\">";
-		$topPane .= "<div class=\"row\"><div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-2\"><label>Issue:</label></div><div class=\"col-md-3\"> ";
-		$topPane .= "<select id=\"selectIssue\" name=\"selectIssue\" class=\"form-control\"><option value=\"0\">-- Choose Issue --</option>".$type_list."</select></div></div>";
+		$topPane .= "<div class=\"row\"><div class=\"well well-sm\">";
+		
+		//$topPane .= "<div class=\"row\"><div class=\"col-md-2\"><label>Issue:</label></div><div class=\"col-md-3\">";
+		//$topPane .= "<select id=\"selectIssue\" name=\"selectIssue\" class=\"form-control\"><option value=\"0\">-- Choose Issue --</option>".$issue_list."</select></div>";
+		//$topPane .="<div class=\"col-md-3 checkbox\"><label><input type=\"checkbox\" name=\"machineDown\" value=\"1\">Machine Down</label></div></div>";
+		
 		$topPane .= "<div class=\"row spacer\"><div class=\"col-md-2\"><label>Work Done:</label></div><div class=\"col-md-8\">";
 		$topPane .= "<textarea class=\"form-control\"".$workName." id=\"workDone\" rows=\"8\" ".$myWork.">".$workDone."</textarea></div>";
-		$topPane .= "<div class=\"col-md-2\">".$workButton."</div></div></div></div></div>".$myFormClose."<div class=\"col-md-6 lWellPadding\" ><div class=\"row\">";
+		$topPane .= "<div class=\"col-md-2 ".$workClosed."\">".$workButton."</div></div></div></div></div>".$myFormClose."<div class=\"col-md-6 lWellPadding\" ><div class=\"row\">";
 		$topPane .= "<div class=\"well well-sm\"><div class=\"row\"><div class=\"col-md-1 col-md-offset-11\">";
 		$topPane .= "<button type=\"button\" class=\"btn btn-default btn-sm\" data-toggle=\"modal\" data-target=\"#hoursModal\" aria-label=\"Edit\">";
 		$topPane .= "<span class=\"glyphicon glyphicon-pencil\" aria-hidden=\"true\"></span></button></div></div><div class=\"row row-horizon LbtnMargin RbtnMargin spacer\">";
@@ -496,26 +506,31 @@ include '../includes/navbar.php';
 										</button>
 									</div>
 								</div>
-								<div class="row spacer">
-									<div class="col-md-6"><label>Issue:</label></div>
-									<div class="col-md-6"><select id="selectRequestType" name="selectRequestType" class="form-control"><option value="0">-- Choose Type --</option><?php echo $type_list; ?></select></div>
+								<div class="row">
+									<div class="col-md-5"><label>Completed:</label></div>
+									<div class="col-md-7"><small><?php echo $workCompleted; ?></small></div>
 								</div>
 								<div class="row">
-									<div class="col-md-6"><label>Completed:</label></div>
-									<div class="col-md-6"><small><?php echo $workCompleted; ?></small></div>
+									<div class="col-md-5"><label>Total Hours:</label></div>
+									<div class="col-md-7" id="totalHours"><small><?php echo $totalTime; ?></small></div>
 								</div>
 								<div class="row">
-									<div class="col-md-6"><label>Total Hours:</label></div>
-									<div class="col-md-6" id="totalHours"><small><?php echo $totalTime; ?></small></div>
+									<div class="col-md-5"><label>Parts Required:</label></div>
+									<div class="col-md-7"><small>N/A</small></div>
 								</div>
 								<div class="row">
-									<div class="col-md-6"><label>Parts Required:</label></div>
-									<div class="col-md-6"><small>N/A</small></div>
+									<div class="col-md-5"><label>Parts Cost:</label></div>
+									<div class="col-md-7"><small>N/A</small></div>
+								</div>
+								<div class="row <?php echo $showDown; ?>">
+									<div class="col-md-5"><label>Machine Down:</label></div>
+									<div class="col-md-7"><input type="checkbox" name="machineDown" value="1"></div>
 								</div>
 								<div class="row">
-									<div class="col-md-6"><label>Parts Cost:</label></div>
-									<div class="col-md-6"><small>N/A</small></div>
+									<div class="col-md-5"><label>Issue:</label></div>
+									<div class="col-md-7"><select id="selectIssue" name="selectIssue" class="form-control"><option value="0">-- Choose Type --</option><?php echo $issue_list; ?></select></div>
 								</div>
+								
 							</div>
 						</div>								
 					</div>
@@ -1094,6 +1109,25 @@ include '../includes/navbar.php';
 				//alert("Message sent");
 				
 				
+			});
+		});
+		//Is machine down
+		$("input[name=machineDown]").click(function(){
+			var machineDown = 0;
+			if(this.checked){
+				machineDown = 1;
+			}else{
+				machineDown = 0;
+			}
+			var request = $.getJSON("../ajax/machinedown.php", {id : workOrderId, down : machineDown}, function(data) {
+			console.log(data);
+			});
+		});
+		$("#selectIssue").on('change', function(){
+			//alert(this.value);
+			var issue = this.value;
+			var request = $.getJSON("../ajax/issue.php", {id : workOrderId, problem : issue}, function(data) {
+				console.log(data);
 			});
 		});
 		

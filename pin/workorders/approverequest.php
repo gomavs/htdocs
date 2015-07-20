@@ -280,7 +280,7 @@ if (isset( $_POST[ 'submit' ] ) ) {
 		sendAlert($db->insert_id);
 	}
 	//Alert requester of the work order approval.
-	$message = "Your work request has for <b>".$messageEnd."</b> has been approved.";
+	$message = "Your work request for <b>".$messageEnd."</b> has been approved.";
 	$query1 = $db->prepare("INSERT INTO messages (msgTo, msgFrom, priority, date, viewed, message, link) VALUES (?, ?, ?, ?, ?, ?, ?)");
 	$query1->bind_param('iiiiiss', $selectRequestBy, $approvedBy, $selectPriority, $timestamp, $viewed, $message, $link);
 	$query1->execute();

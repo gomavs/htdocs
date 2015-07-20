@@ -126,6 +126,27 @@ table#clickableRow{
 #clickableRow td:hover {
     cursor: pointer;
 }
+
+table#clickableRowFacility{
+	border-collapse: collapse;
+}
+
+#clickableRowFacility tr {
+    
+  /* border-top: 1px solid #fff;*/
+}
+#clickableRowFacility tr:hover {
+    background-color: #ccc;
+}
+#clickableRowFacility th {
+    background-color: #fff;
+}
+#clickableRowFacility th, #clickableRowFacility td {
+    padding: 3px 5px;
+}
+#clickableRowFacility td:hover {
+    cursor: pointer;
+}
 .highlight {
 	background-color: #ccc;
 }
@@ -167,6 +188,10 @@ tr.clickableRow {
 
 .spacer {
     margin-top: 20px;
+}
+
+.half-spacer{
+	margin-top: 8px;
 }
 
 td.details-control {

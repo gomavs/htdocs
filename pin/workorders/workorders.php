@@ -13,7 +13,7 @@ $now = $today->format('U');
 
 
 
-$query = $db->prepare("SELECT workcenter.id, workcenter.center, workcenter.name, COUNT(workorder.id) as c FROM workorder LEFT JOIN workcenter ON workorder.workcenterId = workcenter.id LEFT JOIN workrequest ON workorder.workRequestId = workrequest.id WHERE workorder.startDate >= ? AND workorder.status=1 AND workrequest.workTypeId = 1 GROUP BY workcenter.id ORDER BY c DESC LIMIT 5 ");
+$query = $db->prepare("SELECT workcenter.id, workcenter.center, workcenter.name, COUNT(workorder.id) as c FROM workorder LEFT JOIN workcenter ON workorder.workcenterId = workcenter.id LEFT JOIN workrequest ON workorder.workRequestId = workrequest.id WHERE workorder.startDate >= ? AND workrequest.workTypeId = 1 GROUP BY workcenter.id ORDER BY c DESC LIMIT 5 ");
 $query->bind_param("i", $now);
 $query->execute();
 $result = $query->get_result();
@@ -129,7 +129,7 @@ include '../includes/navbar.php';
 		<div class="row col-md-12 spacer">
 			<div class="col-md-8">
 				<div class="panel panel-primary">
-					<div class="panel-heading">Work Orders Completed</div>
+					<div class="panel-heading">Work Orders Completed Over The Last 7 Days</div>
 					<div class="panel-body">
 						<div class="row">
 							<div id="completedorders" style="height: 250px;"></div>

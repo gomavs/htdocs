@@ -8,7 +8,7 @@ if(isset($_GET['id'])){
 	$query->execute();
 	$result = $query->get_result();
 	while (($row = $result->fetch_object()) !== NULL) {
-		$data[] = ["machineId"=>$row->machineId];
+		$data[] = ["machineId"=>$row->itemId];
 	}
 }
 echo json_encode($data);
