@@ -1,7 +1,10 @@
 <?php
 require '../includes/check_login.php';
-//require_once '../includes/dbConnect.php'
-
+if($_SESSION['user_auth_level'] < 10){
+	if($_SESSION['user_authWO'] < 10 && $_SESSION['user_authTS'] < 10){
+		header('location: ../unauthorized.php');
+	}
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,7 +30,7 @@ require '../includes/check_login.php';
 include '../includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="..">Home</a></li>
+	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li class="active">Administration</li>
 </ol>
 <div class="container administration">
@@ -73,7 +76,7 @@ include '../includes/navbar.php';
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 <script src="../js/bootstrap.min.js"></script>
-<script src="js/timeStudy.js"></script>
+<script src="../js/timeStudy.js"></script>
 <script>
 	$(".tree li:has(ul)").addClass("parent").click(function(event) {
 		$(this).toggleClass("open");

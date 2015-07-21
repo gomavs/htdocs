@@ -1,6 +1,10 @@
 <?php
 require '../includes/check_login.php';
-
+if($_SESSION['user_auth_level'] < 10){
+	if($_SESSION['user_authWO'] < 10 && $_SESSION['user_authTS'] < 10){
+		header('location: ../unauthorized.php');
+	}
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/html">
@@ -29,7 +33,7 @@ require '../includes/check_login.php';
 include '../includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="..">Home</a></li>
+	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li><a href="admin.php">Administration</a></li>
 	<li class="active">Machine Administration</li>
 </ol>

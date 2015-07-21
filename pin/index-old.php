@@ -30,29 +30,29 @@ include 'includes/navbar.php';
 <div class="container administration">
 	<div class="row">
 		<div class="col-lg-4">
-			<img class="img-rounded" src="images/work-order.png" alt="Work Orders" style="width: 140px; height: 140px;">
-			<h2>Work Order System</h2>
-			<p>All things related to maintenance work orders.</p>
+			<img class="img-rounded" src="images/cuttingtime.png" alt="Cutting Times" style="width: 140px; height: 140px;">
+			<h2>Cutting Times</h2>
+			<p>This area is for timing of cutting cycles and BOF nested parts.</p>
 			<p>
-				<a class="btn btn-primary" href="workorders/workorders.php" role="button">Work Orders</a>
+				<a class="btn btn-primary" href="#" role="button">Cutting Times</a>
 			</p>
 		</div>
 		<div class="col-lg-4">
-			<img class="img-rounded" src="images/stop-watch.png" alt="Time Study" style="width: 140px; height: 140px;">
-			<h2>Time Study</h2>
-			<p>This area is for the time studies.</p>
+			<img class="img-rounded" src="images/edgebandingtime.png" alt="Edgebanding Times" style="width: 140px; height: 140px;">
+			<h2>Edgebanding Times</h2>
+			<p>This area is for the timing of edgebanding operations no matter the number of sides.</p>
 			<p>
-				<a class="btn btn-primary" href="timestudy/index.php" role="button">Time Studies</a>
+				<a class="btn btn-primary" href="#" role="button">Edgebanding Times</a>
 			</p>
 		</div>
-	<!--<div class="col-lg-4">
+		<div class="col-lg-4">
 			<img class="img-rounded" src="images/machinestime.png" alt="Machining Times" style="width: 140px; height: 140px;">
 			<h2>Machining Times</h2>
 			<p>This area is for timing the machinging of parts.  BAZ operations are included in this area.</p>
 			<p>
 				<a class="btn btn-primary" href="machining.php" role="button">Machining Times</a>
 			</p>
-		</div>-->
+		</div>
 	</div>
 
 </div>

@@ -1,7 +1,10 @@
 <?php
 require '../includes/check_login.php';
-//require_once '../includes/dbConnect.php';
-
+if($_SESSION['user_auth_level'] < 10){
+	if($_SESSION['user_authWO'] < 10 && $_SESSION['user_authTS'] < 10){
+		header('location: ../unauthorized.php');
+	}
+}
 $machine_list = "<select id=\"chooseMachine\" class=\"form-control\" name=\"work_center\"><option value=\"0\">-- Choose Machine --</option>";
 $query = $db->prepare("SELECT * FROM workcenter ORDER BY center ASC");
 $query->execute();
@@ -61,7 +64,7 @@ if (isset( $_POST[ 'submit' ] ) ) {
 include '../includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="..">Home</a></li>
+	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li><a href="admin.php">Administration</a></li>
 	<li><a href="machineadmin.php">Machine Administration</a></li>
 	<li class="active">Edit Machine</li>

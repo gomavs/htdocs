@@ -265,6 +265,8 @@ if (isset( $_POST[ 'submit' ] ) ) {
 	if(!empty($_POST['check_list'] )){
 		foreach($_POST['check_list'] as $check){
 			mysqli_query($db,"INSERT INTO workdata (workOrderId, assignedTo) VALUES ('$workOrderId', '$check')");
+			
+			
 			$query1 = $db->prepare("INSERT INTO messages (msgTo, msgFrom, priority, date, viewed, message, link) VALUES (?, ?, ?, ?, ?, ?, ?)");
 			$query1->bind_param('iiiiiss', $check, $approvedBy, $selectPriority, $timestamp, $viewed, $message, $link);
 			$query1->execute();
@@ -274,6 +276,7 @@ if (isset( $_POST[ 'submit' ] ) ) {
 	if(isset($_POST['checkboxOther'])){
 		$assignOther = intval($_POST['selectOther']);
 		mysqli_query($db,"INSERT INTO workdata (workOrderId, assignedTo) VALUES ('$workOrderId', '$assignOther')");
+		
 		$query1 = $db->prepare("INSERT INTO messages (msgTo, msgFrom, priority, date, viewed, message, link) VALUES (?, ?, ?, ?, ?, ?, ?)");
 		$query1->bind_param('iiiiiss', $assignOther, $approvedBy, $selectPriority, $timestamp, $viewed, $message, $link);
 		$query1->execute();
@@ -324,7 +327,7 @@ function secondsToTime($seconds) {
 include '../includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="..">Home</a></li>
+	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li><a href="workorders.php">Work Orders</a></li>
 	<li class="active">Approve Request</li>
 </ol>

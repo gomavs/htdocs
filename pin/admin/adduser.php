@@ -1,12 +1,23 @@
 <?php
 require '../includes/check_login.php';
-
+if($_SESSION['user_auth_level'] < 10){
+	if($_SESSION['user_authWO'] < 10 && $_SESSION['user_authTS'] < 10){
+		header('location: ../unauthorized.php');
+	}
+}
 if(isset($_POST['submit'])){
+	$mobile = "none";
+	$carrier = "0";
+	$homePage = "";
 	$firstname = $_POST['firstname'];
 	$lastname = $_POST['lastname'];
 	$email = $_POST['email'];
-	$mobile = $_POST['mobile'];
-	$carrier = $_POST['selectCarrier'];
+	if(isset($_POST['mobile']) && !empty($_POST['mobile'])){
+		$mobile = $_POST['mobile'];
+	}
+	if(isset($_POST['selectCarrier'])){
+		$carrier = $_POST['selectCarrier'];
+	}
 	$hashed_password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 	$department = $_POST['selectDepartment'];
 	$active = $_POST['active'];
@@ -17,6 +28,7 @@ if(isset($_POST['submit'])){
 		$partCheck = 0;
 		$tsAuthLevel = 0;
 	}
+	//set home page
 	if(isset($_POST['workCheck'])){
 		$workCheck = 1;
 		$woAuthLevel = $_POST['woAuthLevel'];
@@ -24,14 +36,29 @@ if(isset($_POST['submit'])){
 		$workCheck = 0;
 		$woAuthLevel = 0;
 	}
+	
+	if($partCheck == 1 && $workCheck == 1){
+		$homePage = "index.php";
+	}elseif($partCheck = 1 && $workCheck == 0){
+		$homePage = "timestudy/index.php";
+	}elseif($partCheck = 0 && $workCheck == 1){
+		$homePage = "workorders/workorders.php";
+	}
+	
 	if(isset($_POST['superCheck'])){
 		$authlevel = 10;
 	}else{
 		$authlevel = 0;
 	}
 	$allowTexts = 1;
-	$permissions = $partCheck.",".$workCheck;	
-	mysqli_query($db,"INSERT INTO users (firstname, lastname, email, password, cell, carrierId, authlevel, permissions, authTS, authWO, department, active, allowTexts) VALUES ('$firstname', '$lastname','$email', '$hashed_password', '$mobile', '$carrier', '$authlevel', '$permissions', '$tsAuthLevel', '$woAuthLevel', '$department', '$active', '$allowTexts')");
+	$permissions = $partCheck.",".$workCheck;
+	
+	mysqli_query($db,"INSERT INTO users (firstname, lastname, email, password, cell, carrierId, authlevel, permissions, authTS, authWO, department, active, homePage, allowTexts) VALUES ('$firstname', '$lastname','$email', '$hashed_password', '$mobile', '$carrier', '$authlevel', '$permissions', '$tsAuthLevel', '$woAuthLevel', '$department', '$active', '$homePage', '$allowTexts')");
+	//echo $firstname." ".$lastname." ".$email." ".$hashed_password." ".$mobile." ".$carrier." ".$authlevel." ".$permissions." ".$tsAuthLevel." ".$woAuthLevel." ".$department." ".$active." ".$homePage." ".$allowTexts;
+
+	/*$query = $db->prepare("INSERT INTO messages (firstname, lastname, email, password, cell, carrierId, authlevel, permissions, authTS, authWO, department, active, homePage, allowTexts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+	$query->bind_param('sssssiisiiiisi', $firstname, $lastname, $email, $hashed_password, $mobile, $carrier, $authlevel, $permissions, $tsAuthLevel, $woAuthLevel, $department, $active, $homePage, $allowTexts);
+	$query->execute();*/
 	//header("location:listusers.php");
 }
 ?>
@@ -63,7 +90,7 @@ if(isset($_POST['submit'])){
 include '../includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="..">Home</a></li>
+	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li><a href="admin.php">Administration</a></li>
 	<li><a href="useradmin.php">User Administration</a></li>
 	<li class="active">Add User</li>

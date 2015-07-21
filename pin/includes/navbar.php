@@ -23,9 +23,9 @@ if(mysqli_num_rows($result) > 0){
 	$alerts = mysqli_num_rows($result);
 }
 ////////////////URL's////////////////////
-$url_home = $relative."index.php";
+$url_home = $relative.$_SESSION['home_page'];
 $url_logout = $relative."logout.php";
-$url_machining = $relative."machining.php";
+$url_machining = $relative."timestudy/machining.php";
 $url_settings = $relative."settings.php";
 $url_admin = $relative."admin/admin.php";
 $url_overview = $relative."reports/index.php";
@@ -66,7 +66,7 @@ $url_my_alerts = $relative."alerts.php";
 					}
 				?>
 				<?php
-					if($_SESSION['user_auth_level'] >= 3 && $permission[0] == 1){
+					if($_SESSION['user_authTS'] >= 3 && $permission[0] == 1){
 						echo "<li class=\"dropdown\">";
 						echo "<a href=\"#\" class=\"dropdown-toggle\" data-toggle=\"dropdown\">Timing Reports<span class=\"caret\"></span></a>";
 						//echo "<li><a href=\"reports/index.php\">Reports</a></li>";

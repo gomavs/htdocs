@@ -1,10 +1,5 @@
 <?php
 require '../includes/check_login.php';
-if($_SESSION['user_auth_level'] < 10){
-	if($_SESSION['user_authWO'] < 10 && $_SESSION['user_authTS'] < 10){
-		header('location: ../unauthorized.php');
-	}
-}
 $return_data = "";
 if(isset($_POST["partnumber"])){
 	$ul_count = 0;
@@ -98,9 +93,9 @@ function display_children($category_id, $level){
 include '../includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="<?php echo $url_home; ?>">Home</a></li>
-	<li><a href="admin.php">Administration</a></li>
-	<li class="active">Parts</li>
+	<li><a href="index.php">Home</a></li>
+	<li><a href="index.php">Time Study</a></li>
+	<li class="active">Machining</li>
 </ol>
 <div class="container-fluid">
 	<!-- Stack the columns on mobile by making one full-width and the other half-width -->
@@ -112,14 +107,16 @@ include '../includes/navbar.php';
 				<div class="col-md-5"><input type="text" class="form-control" name="partnumber" id="autocomplete" autofocus placeholder="Enter part number"><input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;"/></div>
 				</form>
 			</div>
+
 			<ul class="tree">
 			<?php echo $return_data; ?>
+			
 			</ul>
 		</div>
 		<div class="col-md-6">
 			<div class="row">
 				<div class="col-md-5"><label>Part Number:</label></div>
-				<div class="col-md-5"><label id="partNumber">Testing</label></div>
+				<div class="col-md-5"><label id="partNumber"> </label></div>
 			</div>
 			<div class="row">
 				<table class="table table-hover tabletimes">
@@ -131,7 +128,7 @@ include '../includes/navbar.php';
 						<th width=20%>Action</th>
 					</tr>
 					<?php
-					$result = mysqli_query($db,"SELECT * FROM timestudy.workcenter WHERE type = 1 ORDER BY center ASC");
+					$result = mysqli_query($db,"SELECT * FROM timestudy.workcenter WHERE type = 1 OR type = 3 AND inservice = 1 ORDER BY center ASC");
 					$machine_list = [];
 					while($row = mysqli_fetch_array($result)) {
 						$mid =  $row['id'];
@@ -153,9 +150,11 @@ include '../includes/navbar.php';
 <script type="text/javascript" src="../js/jquery.autocomplete.min.js"></script>
 <script src="../js/bootstrap.min.js"></script>
 <script src="../js/timeStudy.js"></script>
+<script src="../js/jquery-idleTimeout.js"></script>
 <script src="../js/jquery.runner-min.js" type="text/javascript"></script>
 <script>
 	window.machine_list = <?php echo json_encode($machine_list); ?>;
+	window.user_id = <?php echo $_SESSION['user_id']; ?>;
 	window.partId = "";
 	$(".tree li:has(ul)").addClass("parent").click(function(event) {
 		$(this).toggleClass("open");
@@ -169,6 +168,7 @@ include '../includes/navbar.php';
 		});
 		$(".tree li").click(function(event) {
 			event.stopPropagation();
+			console.log(this);
 		});
 	});
 
@@ -185,7 +185,6 @@ include '../includes/navbar.php';
 		$('#autocomplete').autocomplete({
 			serviceUrl:"../ajax/search.php",
 			onSelect: function(suggestion) {
-				console.log(suggestion);
 			}
 		});
 	});
@@ -198,7 +197,6 @@ include '../includes/navbar.php';
 		$(".boom").removeClass("boom");
 		$(this).addClass("boom");
 		var request = $.getJSON("../ajax/gettimes.php", {id : rowId}, function(data) {
-			console.log(data);
 			$("#partNumber").html(partNumber);
 			$.each(machine_list, function(k, v){
 				$("#runner-" + v).runner('stop');
@@ -245,7 +243,7 @@ include '../includes/navbar.php';
 					if(value.completed == 0){
 						var action_button = "<button id=\"resetTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-warning btn-xs\">Reset</button>  <button id=\"doneTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-primary btn-xs\">Done</button>";
 					}else{
-						var action_button = "<button id=\"resetTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-warning btn-xs\">Reset</button>";
+						var action_button = "<button id=\"resetTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-warning btn-xs\" disabled>Reset</button>";
 					}
 				}
 				
@@ -319,7 +317,7 @@ include '../includes/navbar.php';
 		$("#runner-" + buttonId).runner('stop');
 		var action_button = "<button id=\"resetTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-warning btn-xs\" disabled>Reset</button>";
 		$("#machine-" + buttonId + " td.do_action").html(action_button);
-		var request = $.getJSON("../ajax/finishtimes.php", {id : partId, machine : buttonId}, function(data) {
+		var request = $.getJSON("../ajax/finishtimes.php", {id : partId, machine : buttonId, userid : user_id}, function(data) {
 			console.log(data);
 			
 		});

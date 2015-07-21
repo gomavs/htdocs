@@ -114,7 +114,7 @@ if($row['allowTexts'] == 1){
 include 'includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="index.php">Home</a></li>
+	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li class="active">Settings</li>
 </ol>
 <div class="container">

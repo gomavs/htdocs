@@ -45,6 +45,7 @@ if (!isset($_SESSION['user_email']) || !isset($_SESSION['user_pass'])) {
 			$_SESSION['user_authTS'] = $row['authTS'];
 			$_SESSION['user_authWO'] = $row['authWO'];
 			$_SESSION['logged'] = 1;
+			$_SESSION['home_page'] = $row['homePage'];
 			$_SESSION['time'] = time();
 		}else{
 			session_destroy();

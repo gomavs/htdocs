@@ -1,6 +1,10 @@
 <?php
 require '../includes/check_login.php';
-
+if($_SESSION['user_auth_level'] < 10){
+	if($_SESSION['user_authWO'] < 10 && $_SESSION['user_authTS'] < 10){
+		header('location: ../unauthorized.php');
+	}
+}
 if (isset( $_POST[ 'submit' ] ) ) {
 	$firstname = $_POST['firstname'];
 	$lastname = $_POST['lastname'];
@@ -110,7 +114,7 @@ while($row = mysqli_fetch_array($result)) {
 include '../includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="..">Home</a></li>
+	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li><a href="admin.php">Administration</a></li>
 	<li class="active">Users</li>
 </ol>

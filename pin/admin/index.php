@@ -1,3 +1,6 @@
+<?php
+header('location: ../unauthorized.php');
+?>
 <!DOCTYPE html>
 <html>
 <head>

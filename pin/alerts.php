@@ -53,7 +53,7 @@ while (($row = $result->fetch_object()) !== NULL) {
 include 'includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="..">Home</a></li>
+	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li Class="active">Alerts</a></li>
 </ol>
 <div class="container-fluid">

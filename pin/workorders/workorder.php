@@ -50,8 +50,9 @@ if(isset($_GET['id'])){
 	list($days, $hrs, $mins) = explode(",", $timeEstimate);
 	$issue = $row['issue'];
 	$notes = $row['notes'];
+	$check_down = "";
 	if($row['down'] == 1){
-		
+		$check_down = "checked";
 	}
 	$status = $row['status'];
 	$query = $db->prepare("SELECT * FROM workrequest WHERE id = ?");
@@ -414,7 +415,7 @@ function secondsToTime($seconds) {
 include '../includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="..">Home</a></li>
+	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li><a href="workorders.php">Work Orders</a></li>
 	<li class="active">Work Order</li>
 </ol>
@@ -524,7 +525,7 @@ include '../includes/navbar.php';
 								</div>
 								<div class="row <?php echo $showDown; ?>">
 									<div class="col-md-5"><label>Machine Down:</label></div>
-									<div class="col-md-7"><input type="checkbox" name="machineDown" value="1"></div>
+									<div class="col-md-7"><input type="checkbox" name="machineDown" value="1" <?php echo $check_down; ?>></div>
 								</div>
 								<div class="row">
 									<div class="col-md-5"><label>Issue:</label></div>
@@ -742,6 +743,7 @@ include '../includes/navbar.php';
 			</div>
 	</div>
 </div>
+</body>
 <!-- Bootstrap core JavaScript
 ================================================== -->
 <!-- Placed at the end of the document so the pages load faster -->

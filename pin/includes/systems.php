@@ -1,9 +1,6 @@
 <?php
-
 function sendAlert($alertId){
-	//require_once("dbConnect.php");
 	global $db;
-	//$alertId = 68;
 	$query = $db->prepare("SELECT messages.id, messages.msgTo, messages.msgFrom, messages.message, users.cell, users.carrierId, users.allowTexts, smsaddress.suffix, smsaddress.rules FROM messages LEFT JOIN users ON users.id=messages.msgTo LEFT JOIN smsaddress ON smsaddress.id=users.carrierId WHERE messages.id=?");
 	$query->bind_param("i", $alertId);
 	$query->execute();
@@ -19,9 +16,6 @@ function sendAlert($alertId){
 				$message = str_replace("<b>", "", $message);
 				$message = str_replace("</b>", "", $message);
 				$headers = 'From: noreply@pin.com' . "\r\n" . 'X-Mailer: PHP/' . phpversion();
-				//echo $to."</br>";
-				//echo $subject."</br>";
-				//echo $row['message']."</br>";
 				if(mail($to, $subject, $message, $headers)){
 					//echo "Success";
 				}else{

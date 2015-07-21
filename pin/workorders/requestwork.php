@@ -118,7 +118,7 @@ if (isset( $_POST[ 'submit' ] ) ) {
 include '../includes/navbar.php';
 ?>
 <ol class="breadcrumb">
-	<li><a href="..">Home</a></li>
+	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li><a href="workorders.php">Work Orders</a></li>
 	<li class="active">Requst work</li>
 </ol>
