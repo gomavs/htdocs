@@ -22,6 +22,26 @@ $result = $query->get_result();
 if(mysqli_num_rows($result) > 0){
 	$alerts = mysqli_num_rows($result);
 }
+/////////////////Find escalation level////////////////
+$myTier = 0;
+$escalated = 0;
+$escalatedMenu = "";
+$query = $db->prepare("SELECT tier FROM escalation WHERE userId = ?");
+$query->bind_param("i", $_SESSION['user_id']);
+$query->execute();
+$result = $query->get_result();
+$row = $result->fetch_assoc();
+$myTier = $row['tier'];
+if($myTier > 1){
+	$checkEscalate = $myTier - 1;
+	$query = $db->prepare("SELECT * FROM workrequest WHERE escalate >= 1 AND escalate < ?");
+	$query->bind_param("i", $myTier);
+	$query->execute();
+	$result = $query->get_result();
+	$escalated = mysqli_num_rows($result);
+	$escalatedMenu = "&nbsp;<span class=\"badge\">".$escalated."</span>";
+}
+
 ////////////////URL's////////////////////
 $url_home = $relative.$_SESSION['home_page'];
 $url_logout = $relative."logout.php";
@@ -39,6 +59,7 @@ $url_work_progress = $relative."workorders/workprogress.php";
 $url_closed_work = $relative."workorders/closedwork.php";
 $url_my_work_orders = $relative."workorders/myworkorders.php";
 $url_my_alerts = $relative."alerts.php";
+$url_escalated_requests = $relative."workorders/escalated.php";
 ?>
 <nav class="navbar navbar-default" role="navigation">
 	<div class="container-fluid">
@@ -89,6 +110,9 @@ $url_my_alerts = $relative."alerts.php";
 						}
 						echo "<li role=\"presentation\"><a role=\"menuitem\" href=\"".$url_request_work."\">Request Work</a></li>";
 						echo "<li role=\"presentation\"><a role=\"menuitem\" href=\"".$url_open_work."\">Open Work Requests</a></li>";
+						if($myTier > 1 && $escalated > 0){
+							echo "<li role=\"presentation\"><a role=\"menuitem\" href=\"".$url_escalated_requests."\">Escalated Requests".$escalatedMenu."</a></li>";
+						}
 						echo "<li role=\"presentation\"><a role=\"menuitem\" href=\"".$url_work_progress."\">Work in Progress</a></li>";
 						echo "<li role=\"presentation\"><a role=\"menuitem\" href=\"".$url_closed_work."\">Closed Work</a></li>";
 						echo "</ul></li>";

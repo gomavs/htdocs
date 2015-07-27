@@ -2,7 +2,7 @@
 require_once("../includes/dbConnect.php");
 $data = [];
 $i = 0;
-$query = $db->prepare("SELECT * FROM workrequest WHERE accepted = 0 and escalate = 0 ORDER BY id ASC");
+$query = $db->prepare("SELECT * FROM workrequest WHERE accepted = 2 AND escalate = 1 ORDER BY id ASC");
 $query->execute();
 $result = $query->get_result();
 while (($row = $result->fetch_object()) !== NULL) {

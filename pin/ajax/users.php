@@ -12,7 +12,7 @@ while (($row = $result->fetch_object()) !== NULL) {
 		default : $active = "No"; 
 	}
 
-	$data[] = ["First Name"=>$row->firstname, "Last Name"=>$row->lastname, "Email Address"=>$row->email, "Mobil Number"=>$row->cell, "Permissions"=>$row->permissions, "Active"=>$active, "ID"=>$row->id];
+	$data[] = ["First Name"=>$row->firstname, "Last Name"=>$row->lastname, "Email Address"=>$row->email, "Mobile Number"=>$row->cell, "Permissions"=>$row->permissions, "Active"=>$active, "ID"=>$row->id];
 }
 echo json_encode($data);
 

@@ -6,7 +6,7 @@ if($_SESSION['user_auth_level'] < 10){
 	}
 }
 if(isset($_POST['submit'])){
-	$mobile = "none";
+	$mobile = "";
 	$carrier = "0";
 	$homePage = "";
 	$firstname = $_POST['firstname'];
@@ -52,14 +52,36 @@ if(isset($_POST['submit'])){
 	}
 	$allowTexts = 1;
 	$permissions = $partCheck.",".$workCheck;
-	
-	mysqli_query($db,"INSERT INTO users (firstname, lastname, email, password, cell, carrierId, authlevel, permissions, authTS, authWO, department, active, homePage, allowTexts) VALUES ('$firstname', '$lastname','$email', '$hashed_password', '$mobile', '$carrier', '$authlevel', '$permissions', '$tsAuthLevel', '$woAuthLevel', '$department', '$active', '$homePage', '$allowTexts')");
-	//echo $firstname." ".$lastname." ".$email." ".$hashed_password." ".$mobile." ".$carrier." ".$authlevel." ".$permissions." ".$tsAuthLevel." ".$woAuthLevel." ".$department." ".$active." ".$homePage." ".$allowTexts;
-
-	/*$query = $db->prepare("INSERT INTO messages (firstname, lastname, email, password, cell, carrierId, authlevel, permissions, authTS, authWO, department, active, homePage, allowTexts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+	//Insert User into DB
+	$query = $db->prepare("INSERT INTO users (firstname, lastname, email, password, cell, carrierId, authlevel, permissions, authTS, authWO, department, active, homePage, allowTexts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 	$query->bind_param('sssssiisiiiisi', $firstname, $lastname, $email, $hashed_password, $mobile, $carrier, $authlevel, $permissions, $tsAuthLevel, $woAuthLevel, $department, $active, $homePage, $allowTexts);
-	$query->execute();*/
-	//header("location:listusers.php");
+	$query->execute();
+	$userId = $query->insert_id;
+	//Insert User into escalation table if checked
+	if(isset($_POST['escalate'])){
+		$query = $db->prepare("INSERT INTO escalation (tier, userId, department) VALUES (?, ?, ?)");
+		$query->bind_param('iii', $_POST['selectEscalate'], $userId, $department);
+		$query->execute();
+	}
+}
+$data = array();
+$tier1 = "";
+$tier2 = "";
+$tier3 = "";
+$query = $db->prepare("SELECT escalation.tier, users.firstname, users.lastname FROM escalation LEFT JOIN users ON escalation.userId = users.id ORDER BY escalation.tier ASC");
+$query->execute();
+$result = $query->get_result();
+while (($row = $result->fetch_object()) !== NULL) {
+	$data[] = array("firstname"=>$row->firstname, "lastname"=>$row->lastname, "tier"=>$row->tier);
+}
+foreach($data as $value){
+	if($value['tier'] == 1){
+		$tier1 .= "<div class=\"row col-md-9 col-md-offset-1\">".$value['firstname']." ".$value['lastname']."</div>";
+	}elseif($value['tier'] == 2){
+		$tier2 .= "<div class=\"row col-md-9 col-md-offset-1\">".$value['firstname']." ".$value['lastname']."</div>";
+	}elseif($value['tier'] == 3){
+		$tier3 .= "<div class=\"row col-md-9 col-md-offset-1\">".$value['firstname']." ".$value['lastname']."</div>";
+	}
 }
 ?>
 <!DOCTYPE html>
@@ -336,12 +358,12 @@ include '../includes/navbar.php';
 								<div class="panel panel-heading">Permissions</div>
 								<div class="panel-body">
 									<div class="row col-md-12">
-										<div class="row col-md-5">
+										<div class="col-md-5">
 											<div class="checkbox">
 												<label><input type="checkbox" id="partCheck" name="partCheck" tabindex="10">Part Timing System</label>
 											</div>
 										</div>
-										<div class="row col-md-7">
+										<div class="col-md-6">
 											<select class="form-control" name="tsAuthLevel" id="partDrop" tabindex="11" disabled>
 												<option value="1">Time Keeper</option>
 												<option value="2">Supervisor</option>
@@ -351,12 +373,12 @@ include '../includes/navbar.php';
 										</div>
 									</div>
 									<div class="row col-md-12 spacer">
-										<div class="row col-md-5">
+										<div class="col-md-5">
 											<div class="checkbox">
 												<label><input type="checkbox" id="workCheck" name="workCheck" tabindex="12">Work Order System</label>
 											</div>
 										</div>
-										<div class="row col-md-7">
+										<div class="col-md-6">
 											<select class="form-control" name="woAuthLevel" id="workDrop" tabindex="13" disabled>
 												<option value="1">Operator</option>
 												<option value="2">Supervisor</option>
@@ -368,12 +390,57 @@ include '../includes/navbar.php';
 										</div>
 									</div>
 									<div class="row col-md-12 spacer">
-										<div class="row col-md-6">
+										<div class="col-md-6">
 											<div class="checkbox">
 												<label><input type="checkbox" id="superCheck" name="superCheck" tabindex="14" disabled>Super Administrator</label>
 											</div>
 										</div>
 									</div>
+									<div class="row col-md-12 spacer">
+										<div class="col-md-5">
+											<div class="checkbox">
+												<label><input type="checkbox" id="escalate" name="escalate" tabindex="15">Approval Level</label>
+											</div>
+										</div>
+										<div class="col-md-4">
+											<select class="form-control" name="selectEscalate" id="selectEscalate" tabindex="16" disabled>
+												<option value="1">Tier 1</option>
+												<option value="2">Tier 2</option>
+												<option value="3">Tier 3</option>
+											</select>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-1">
+					
+					</div>
+					<div class="col-md-2">
+						<div class="row spacer">
+							<div class="panel panel-warning">
+								<div class="panel panel-heading">Approval Tiers</div>
+								<div class="panel-body">
+									<div class="row col-md-12">
+										<label>Tier 1</label>
+									</div>
+									<div class="row tier-1">
+										<?php echo $tier1; ?>
+									</div>
+									<div class="row col-md-12 spacer">
+										<label>Tier 2</label>
+									</div>
+									<div class="row tier-2">
+										<?php echo $tier2; ?>
+									</div>
+									<div class="row col-md-12 spacer">
+										<label>Tier 3</label>
+									</div>
+									<div class="row tier-3">
+										<?php echo $tier3; ?>
+									</div>
+									
 								</div>
 							</div>
 						</div>
@@ -415,6 +482,13 @@ include '../includes/navbar.php';
 				$("#workDrop").prop("disabled", false);
 			} else {
 				$("#workDrop").prop("disabled", true);  
+			}
+		});
+		$("#escalate").click(function() {
+			if ($(this).is(":checked")) {
+				$("#selectEscalate").prop("disabled", false);
+			} else {
+				$("#selectEscalate").prop("disabled", true);  
 			}
 		});
 		if(superAdmin == 10){

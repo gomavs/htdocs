@@ -2,7 +2,7 @@
 require_once("../includes/dbConnect.php");
 $data = [];
 $i = 0;
-$query = $db->prepare("SELECT * FROM workrequest WHERE accepted = 0 and escalate = 0 ORDER BY id ASC");
+$query = $db->prepare("SELECT workrequest.*, users.firstname AS uRF, users.lastname AS uRL, decline_user.firstname AS uDF, decline_user.lastname AS uDL, declinedreasons.reason FROM workrequest LEFT JOIN users ON workrequest.requestedBy = users.id LEFT JOIN users AS decline_user ON workrequest.declinedBy = decline_user.id LEFT JOIN declinedreasons ON workrequest.declinedFor = declinedreasons.id WHERE workrequest.accepted = 2 AND workrequest.escalate = 2 ORDER BY workrequest.id ASC");
 $query->execute();
 $result = $query->get_result();
 while (($row = $result->fetch_object()) !== NULL) {
@@ -15,20 +15,16 @@ while (($row = $result->fetch_object()) !== NULL) {
 	$requestTime = new DateTime($requestTime);
 	$requestTime->setTimezone(new DateTimeZone('America/Chicago'));
 	$requestTime = $requestTime->format("h:i A");
-	$requesterId = $row->requestedBy;
 	$otherType = $row->other;
 	$id = $row->id;
-	$query = $db->prepare("SELECT firstname, lastname FROM users WHERE id = ?");
-	$query->bind_param("i", $requesterId);
-	$query->execute();
-	$result2 = $query->get_result();
-	$row2 = $result2->fetch_assoc();
-	$requestedBy = $row2['firstname']." ".$row2['lastname'];
+	$requestedBy = $row->uRF." ".$row->uRL;
+	$declinedBy = $row->uDF." ".$row->uDL;
+	$declinedFor = $row->reason;
 	switch($row->priority){
-		case 1: $priority = "Low"; break;
-		case 2: $priority = "Medium"; break;
-		case 3: $priority = "High"; break;
-		default: $priority = "Low";
+		case 1: $priority = 1; $mark = ""; break;
+		case 2: $priority = 2; $mark = "!"; break;
+		case 3: $priority = 3; $mark = "!"; break;
+		default: $priority = 1; $mark = "";
 	}
 	if($workTypeId == 1){
 		$workType = "Machine";
@@ -70,7 +66,7 @@ while (($row = $result->fetch_object()) !== NULL) {
 		$workType = "Other";
 		$items = $otherType;
 	}
-	$data[] = ["#"=>$i, "Type"=>$workType, "Item"=>$items, "Description"=>$description, "Request Date"=>$requestDate, "Request Time"=>$requestTime, "Requested By"=>$requestedBy, "Priority"=>$priority, "ID"=>$id];
+	$data[] = ["#"=>$i, "Mark"=>$mark, "Type"=>$workType, "Item"=>$items, "Description"=>$description, "Request Date"=>$requestDate, "Requested By"=>$requestedBy, "Declined By"=>$declinedBy, "Declined Reason"=>$declinedFor, "ID"=>$id, "status"=>$priority];
 }
 echo json_encode($data);
 ?>

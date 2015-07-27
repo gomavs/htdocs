@@ -56,7 +56,7 @@ include '../includes/navbar.php';
 							<th>First Name</th>
 							<th>Last Name</th>
 							<th>Email Address</th>
-							<th>Mobil Number</th>
+							<th>Mobile Number</th>
 							<th>Permissions</th>
 							<th>Active</th>
 							<th>ID</th>
@@ -103,7 +103,7 @@ include '../includes/navbar.php';
 				{ "data": "First Name" },
 				{ "data": "Last Name" },
 				{ "data": "Email Address" },
-				{ "data": "Mobil Number"},
+				{ "data": "Mobile Number"},
 				{ "data": "Permissions" },
 				{ "data": "Active" },
 				{ "data": "ID",

@@ -28,11 +28,12 @@ while (($row = $result->fetch_object()) !== NULL) {
 	$requestTime = $requestTime->format("h:i A");
 	$requesterId = $row1['requestedBy'];
 	$otherType = $row1['other'];
-	switch($row1['priority']){
-		case 1: $priority = "Low"; break;
-		case 2: $priority = "Medium"; break;
-		case 3: $priority = "High"; break;
-		default: $priority = "Low";
+	$status = $row1['priority'];
+	switch($status){
+		case 1: $priority = "Low"; $symbol = ""; break;
+		case 2: $priority = "Medium"; $symbol = "<b>!</b>"; break;
+		case 3: $priority = "High"; $symbol = "<b>!</b>"; break;
+		default: $priority = "Low"; $symbol = "";
 	}
 	if($workTypeId == 1){
 		$workType = "Machine";
@@ -83,20 +84,22 @@ while (($row = $result->fetch_object()) !== NULL) {
 	$assignedTo = assignment($workOrderId);
 	$assignedTo = rtrim($assignedTo, ", ");
 	$data[] = [
-		"#"=>$workOrderId, 
+		"#"=>$workOrderId,
+		"mark"=>$symbol,
 		"Type"=>$workType, 
 		"Item"=>$items, 
 		"Description"=>$description, 
 		"Request Date"=>$requestDate, 
-		"Request Time"=>$requestTime, 
+		"Request Time"=>$requestTime,
+		"Due Date"=>$dueDate,
 		"Requested By"=>$requestedBy, 
 		"Priority"=>$priority,  
 		"Assigned"=>$assignedTo, 
 		"assignDate"=>$startDate,
-		"dueDate"=>$dueDate,
 		"estimate"=>$timeEstimate,		
 		"notes"=>$notes,
-		"id"=>$workOrderId
+		"id"=>$workOrderId,
+		"status"=>$status
 		];
 }
 

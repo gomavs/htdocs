@@ -48,12 +48,14 @@ include '../includes/navbar.php';
 				<thead>
 					<tr>
 						<th></th>
+						<th></th>
 						<th>#</th>
 						<th>Type</th>
 						<th>Item</th>
 						<th>Description</th>
 						<th>Request Date</th>
 						<th>Request Time</th>
+						<th>Due Date</th>
 						<th>Requested By</th>
 						<th>Priority</th>
 						<th>Command</th>
@@ -61,7 +63,9 @@ include '../includes/navbar.php';
 				</thead>
 				<tbody>
 					<tr>
-						<th></th>
+						<td></td>
+						<td></td>
+						<td></td>
 						<td></td>
 						<td></td>
 						<td></td>
@@ -99,14 +103,20 @@ include '../includes/navbar.php';
 					"data":           null,
 					"defaultContent": ''
 				},
+				{	
+					"data": "mark",
+					"sWidth": "2%",
+					"orderable": false
+				},
 				{ "data": "#", "sWidth": "5%" },
 				{ "data": "Type", "sWidth": "7%" },
-				{ "data": "Item", "sWidth": "10%" },
+				{ "data": "Item", "sWidth": "11%" },
 				{ "data": "Description", "sWidth": "25%" },
-				{ "data": "Request Date", "sWidth": "10%" },
-				{ "data": "Request Time", "sWidth": "10%" },
+				{ "data": "Request Date", "sWidth": "8%" },
+				{ "data": "Request Time", "sWidth": "8%" },
+				{ "data": "Due Date", "sWidth": "8%" },
 				{ "data": "Requested By", "sWidth": "10%" },
-				{ "data": "Priority", "sWidth": "10%"},
+				{ "data": "Priority", "sWidth": "8%"},
 				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
 					if( authWO >= 3){
 						return '<a class="btn btn-info btn-sm" href=workorder.php?id=' + data.id + '>' + 'View' + '</a>';
@@ -118,9 +128,9 @@ include '../includes/navbar.php';
 			"fnRowCallback": function( nRow, data, iDisplayIndex ) {
 				try{
 					if(data.Priority == 'High'){
-						$(nRow).addClass("danger");
+						//$(nRow).addClass("danger");
 					} else if (data.Priority == 'Medium'){
-						$(nRow).addClass("warning");
+						//$(nRow).addClass("warning");
 					} else {
 						//$(nRow).addClass("info");
 					}
@@ -129,7 +139,14 @@ include '../includes/navbar.php';
 					alert("fnRowCallback exception:");
 				}
 				return nRow
+			},
+			"createdRow": function ( row, data, index ) {
+			if(data.status == 3){
+				$('td', row).eq(1).addClass('text-danger high-importance');
+			}else if (data.status == 2){
+				$('td', row).eq(1).addClass('text-primary med-importance');
 			}
+        }
 		} );
 		
 		// Formatting function for row details
@@ -143,8 +160,6 @@ include '../includes/navbar.php';
 				'<tr>'+
 					'<td><b>Assigned Date:</b></td>'+
 					'<td>'+d.assignDate+'</td>'+
-					'<td><b>Due Date:</b></td>'+
-					'<td>'+d.dueDate+'</td>'+
 					'<td><b>Estimated Time:</b></td>'+
 					'<td>'+d.estimate+'</td>'+
 				'</tr>'+

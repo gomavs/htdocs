@@ -10,3 +10,5 @@ Known issues
 9.	Create alerts - DONE
 10.	Create user admin page - DONE
 11.	Make it so that work orders can be given an order preference.
+12. Add escaltion process for rejected work requests.
+13. Add priority notes to work request section.

@@ -56,6 +56,51 @@ if(isset($_POST['submit'])){
 		$query->bind_param("ssssiisiiiii", $firstname, $lastname, $email, $mobile, $carrier, $authlevel, $permissions, $tsAuthLevel, $woAuthLevel, $department, $active, $_POST['id']);
 		$query->execute();
 	}
+	$authorized = 0;
+	$query = $db->prepare("SELECT id, tier FROM escalation WHERE userId = ?");
+	$query->bind_param("i", $_POST['id']);
+	$query->execute();
+	$result = $query->get_result();
+	while (($row = $result->fetch_object()) !== NULL) {
+		$authorized = $row->tier;
+		$rowId = $row->id;
+	}
+	if(isset($_POST['escalate'])){
+		if($authorized > 0){
+			$query = $db->prepare("UPDATE escalation SET tier = ?, department = ? WHERE id = ?");
+			$query->bind_param("iii", $_POST['tier'], $department, $rowId);
+			$query->execute();
+		}else{
+			$query = $db->prepare("INSERT INTO escalation (tier, userId, department) VALUES (?, ?, ?)");
+			$query->bind_param('iii', $_POST['tier'], $_POST['id'], $department);
+			$query->execute();
+		}
+	}else{
+		if($authorized > 0){
+			$query = $db->prepare("DELETE FROM escalation WHERE id = ?");
+			$query->bind_param('i', $rowId);
+			$query->execute();
+		}
+	}
+}
+$data = array();
+$tier1 = "";
+$tier2 = "";
+$tier3 = "";
+$query = $db->prepare("SELECT escalation.tier, users.firstname, users.lastname FROM escalation LEFT JOIN users ON escalation.userId = users.id ORDER BY escalation.tier ASC");
+$query->execute();
+$result = $query->get_result();
+while (($row = $result->fetch_object()) !== NULL) {
+	$data[] = array("firstname"=>$row->firstname, "lastname"=>$row->lastname, "tier"=>$row->tier);
+}
+foreach($data as $value){
+	if($value['tier'] == 1){
+		$tier1 .= "<div class=\"row col-md-9 col-md-offset-1\">".$value['firstname']." ".$value['lastname']."</div>";
+	}elseif($value['tier'] == 2){
+		$tier2 .= "<div class=\"row col-md-9 col-md-offset-1\">".$value['firstname']." ".$value['lastname']."</div>";
+	}elseif($value['tier'] == 3){
+		$tier3 .= "<div class=\"row col-md-9 col-md-offset-1\">".$value['firstname']." ".$value['lastname']."</div>";
+	}
 }
 ?>
 <!DOCTYPE html>
@@ -300,6 +345,9 @@ include '../includes/navbar.php';
 												</div>
 											</div>
 										</div>
+										<div class="row">
+											<button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#resetPass">Reset Password</button>
+										</div>
 									</div>
 								</div>
 							</div>
@@ -314,12 +362,12 @@ include '../includes/navbar.php';
 								<div class="panel panel-heading">Permissions</div>
 								<div class="panel-body">
 									<div class="row col-md-12">
-										<div class="row col-md-5">
+										<div class="col-md-5">
 											<div class="checkbox">
 												<label><input type="checkbox" id="partCheck" name="partCheck" tabindex="10">Part Timing System</label>
 											</div>
 										</div>
-										<div class="row col-md-7">
+										<div class="col-md-7">
 											<select class="form-control" name="authTS" id="authTS" tabindex="11" disabled>
 												<option value="0"disabled selected>--Choose Option--</option>
 												<option value="1">Time Keeper</option>
@@ -330,12 +378,12 @@ include '../includes/navbar.php';
 										</div>
 									</div>
 									<div class="row col-md-12 spacer">
-										<div class="row col-md-5">
+										<div class="col-md-5">
 											<div class="checkbox">
 												<label><input type="checkbox" id="workCheck" name="workCheck" tabindex="12">Work Order System</label>
 											</div>
 										</div>
-										<div class="row col-md-7">
+										<div class="col-md-7">
 											<select class="form-control" name="authWO" id="authWO" tabindex="13" disabled>
 												<option value="0" disabled selected>--Choose Option--</option>
 												<option value="1">Operator</option>
@@ -348,10 +396,24 @@ include '../includes/navbar.php';
 										</div>
 									</div>
 									<div class="row col-md-12 spacer">
-										<div class="row col-md-6">
+										<div class="col-md-6">
 											<div class="checkbox">
 												<label><input type="checkbox" id="superCheck" name="superCheck" tabindex="14" disabled>Super Administrator</label>
 											</div>
+										</div>
+									</div>
+									<div class="row col-md-12 spacer">
+										<div class="col-md-5">
+											<div class="checkbox">
+												<label><input type="checkbox" id="escalate" name="escalate" tabindex="15">Approval Level</label>
+											</div>
+										</div>
+										<div class="col-md-4">
+											<select class="form-control" name="tier" id="tier" tabindex="16" disabled>
+												<option value="1">Tier 1</option>
+												<option value="2">Tier 2</option>
+												<option value="3">Tier 3</option>
+											</select>
 										</div>
 									</div>
 								</div>
@@ -363,11 +425,26 @@ include '../includes/navbar.php';
 					</div>
 					<div class="col-md-2">
 						<div class="row spacer">
-							<div class="panel panel-info">
-								<div class="panel panel-heading">Reset Password</div>
+							<div class="panel panel-warning">
+								<div class="panel panel-heading">Approval Tiers</div>
 								<div class="panel-body">
-									<div class="row col-md-12 text-center">
-										<button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#resetPass">Reset Password</button>
+									<div class="row col-md-12">
+										<label>Tier 1</label>
+									</div>
+									<div class="row tier-1">
+										<?php echo $tier1; ?>
+									</div>
+									<div class="row col-md-12 spacer">
+										<label>Tier 2</label>
+									</div>
+									<div class="row tier-2">
+										<?php echo $tier2; ?>
+									</div>
+									<div class="row col-md-12 spacer">
+										<label>Tier 3</label>
+									</div>
+									<div class="row tier-3">
+										<?php echo $tier3; ?>
 									</div>
 								</div>
 							</div>
@@ -381,8 +458,7 @@ include '../includes/navbar.php';
 						</div>
 					</div>
 				</div>
-			</form>
-			
+			</form>	
 			<!-- Reset Pass Modal -->
 			<div class="modal fade" id="resetPass" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 				<div class="modal-dialog">
@@ -431,8 +507,6 @@ include '../includes/navbar.php';
 <script src="../js/validator.js"></script>
 <script>
 	window.superUser = <?php echo $_SESSION['user_auth_level']; ?>;
-	
-
 	$(document).ready(function(){
 		$("#chooseUser").change(function(){
 			$("#reset_alert").addClass("hidden");
@@ -470,6 +544,13 @@ include '../includes/navbar.php';
 		} else {
 			$("#superCheck").prop("disabled", true);
 		};
+		$("#escalate").click(function() {
+			if ($(this).is(":checked")) {
+				$("#tier").prop("disabled", false);
+			} else {
+				$("#tier").prop("disabled", true);  
+			}
+		});
 	});
 	
 	function populate(form, data) {
@@ -504,7 +585,15 @@ include '../includes/navbar.php';
 					$("#superCheck").prop("checked", false);
 				}
 			}
-			
+			if(key == "tier"){
+				if(value > 0){
+					$("#escalate").prop("checked", true);
+					$("#tier").prop("disabled", false);
+				}else{
+					$("#escalate").prop("checked", false);
+					$("#tier").prop("disabled", true);
+				}
+			}
 			switch ($field.attr("type")) {
 				case "radio":
 				case "checkbox":

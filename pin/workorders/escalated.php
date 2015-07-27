@@ -32,7 +32,7 @@ include '../includes/navbar.php';
 <ol class="breadcrumb">
 	<li><a href="<?php echo $url_home; ?>">Home</a></li>
 	<li><a href="workorders.php">Work Orders</a></li>
-	<li class="active">Open Work Requests</li>
+	<li class="active">Escalated Requests</li>
 </ol>
 <!-- Decline modal -->
 <div class="modal fade" id="declineModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -75,10 +75,10 @@ include '../includes/navbar.php';
 </div>
 <div class="container-fluid">
 	<div class="panel panel-primary">
-		<div class="panel-heading">Open Work Requests</div>
+		<div class="panel-heading">Requests Escalated To Level 2</div>
 		<div class="panel-body">
 			
-			<table id="table_id" class="display testing">
+			<table id="table_1" class="display testing">
 				<thead>
 					<tr>
 						<th>#</th>
@@ -95,6 +95,45 @@ include '../includes/navbar.php';
 				</thead>
 				<tbody>
 					<tr>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<div class="panel panel-primary">
+		<div class="panel-heading">Requests Escalated To Level 3</div>
+		<div class="panel-body">
+			
+			<table id="table_2" class="display testing">
+				<thead>
+					<tr>
+						<th>#</th>
+						<th></th>
+						<th>Type</th>
+						<th>Item</th>
+						<th>Description</th>
+						<th>Request Date</th>
+						<th>Requested By</th>
+						<th>Declined By</th>
+						<th>Declined Reason</th>
+						<th>Command</th>
+						<th>ID</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td></td>
+						<td></td>
 						<td></td>
 						<td></td>
 						<td></td>
@@ -122,10 +161,10 @@ include '../includes/navbar.php';
 <script>
 	$(document).ready(function() {
 		var authWO = <?php echo $_SESSION['user_authWO'] ?>;
-		table = $('#table_id').DataTable( {
+		table = $('#table_1').DataTable( {
 			"bProcessing": true,
 			"sAjaxDataProp":"",
-			"ajax": "../ajax/getworkrequests.php",
+			"ajax": "../ajax/getescalated.php",
 			"aoColumns": [
 				{ "data": "#", "sWidth": "5%" },
 				{ "data": "Type", "sWidth": "7%" },
@@ -146,7 +185,49 @@ include '../includes/navbar.php';
 				{ "data": "ID",
 				  "visible": false,
 				  "searchable": false },
+				{ "data": "Priority",
+					"visible": false,
+					"searchable": false
+				}
 			]
+		});
+		table = $('#table_2').DataTable( {
+			"bProcessing": true,
+			"sAjaxDataProp":"",
+			"ajax": "../ajax/getescalated2.php",
+			"aoColumns": [
+				{ "data": "#", "sWidth": "3%" },
+				{	
+					"data": "Mark",
+					"sWidth": "2%",
+					"orderable": false
+				},
+				{ "data": "Type", "sWidth": "7%" },
+				{ "data": "Item", "sWidth": "11%" },
+				{ "data": "Description", "sWidth": "23%" },
+				{ "data": "Request Date", "sWidth": "10%" },
+				{ "data": "Requested By", "sWidth": "10%" },
+				{ "data": "Declined By", "sWidth": "10%"},
+				{ "data": "Declined Reason", "sWidth": "14%"},
+				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
+					if( authWO >= 4){
+						return '<a class="btn btn-info btn-sm" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal" aria-label="Decline">Decline</button>';
+						//return '<a class="btn btn-info btn-sm" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<a class="btn btn-danger btn-sm"  href=deleterequest.php?id=' + data.ID + '>' + 'Decline' + '</a>';
+					}else{
+						return '<a class="btn btn-info btn-sm disabled" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<a class="btn btn-danger btn-sm disabled" href=deleterequest.php?id=' + data.ID + '>' + 'Decline' + '</a>';
+					}
+				}},
+				{ "data": "ID",
+				  "visible": false,
+				  "searchable": false }
+			],
+			"createdRow": function ( row, data, index ) {
+				if(data.status == 3){
+					$('td', row).eq(1).addClass('text-danger high-importance');
+				}else if (data.status == 2){
+					$('td', row).eq(1).addClass('text-primary med-importance');
+				}
+			}
 		});
 		
 		$( ".testing" ).on( "click", "[id^=decline-]", function() {

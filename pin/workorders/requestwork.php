@@ -122,6 +122,43 @@ include '../includes/navbar.php';
 	<li><a href="workorders.php">Work Orders</a></li>
 	<li class="active">Requst work</li>
 </ol>
+<!-- Info modal -->
+<div class="modal fade" id="priorityModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title" id="priorityModalLabel">Priority Definitions</h4>
+			</div>
+			<form>
+				<div class="modal-body ">
+					<div class="row">
+						<div class="col-md-3"><label for="declined" class="control-label">Priority Low</label></div>
+						<div class="col-md-9">
+							<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-md-3"><label for="declined" class="control-label">Priority Medium</label></div>
+						<div class="col-md-9">
+							<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-md-3"><label for="declined" class="control-label">Priority High</label></div>
+						<div class="col-md-9">
+							<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+						</div>
+					</div>
+				</div>
+				<input type="hidden" id="requestId", name="requestId" value="">
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
 <div class="container-fluid">
 	<div class="panel panel-primary">
 		<div class="panel-heading">Request Work</div>
@@ -159,12 +196,13 @@ include '../includes/navbar.php';
 					</div>
 					<div class="col-md-3 form-group hidden" id="priority">
 						<div class="col-md-3"><label for="selectPriority" class="control-label">Priority</label></div>
-						<div class="col-md-7"><select id="selectPriority" name="selectPriority" class="form-control">
-							<option value="" disabled selected>--Choose Priority--</option>
+						<div class="col-md-5"><select id="selectPriority" name="selectPriority" class="form-control">
+							<option value="" disabled selected>--Choose One--</option>
 							<option value="1">Low</option>
-							<option value="2">Medium</option>
-							<option value="3">High</option>
+							<option class="text-warning" value="2">Medium</option>
+							<option class="text-danger" value="3">High</option>
 						</Select></div>
+						<div class="col-md-2 text-info"><small><a href="#" data-toggle="modal" data-target="#priorityModal">Help?</a></small></div>
 					</div>
 					<div class="col-md-3 form-group hidden" id="description">
 						<div class="col-md-4"><label for="textDescription" class="control-label">Description</label></div>
@@ -292,6 +330,7 @@ include '../includes/navbar.php';
 			var optionValue2 = $( "#selectSafety").val();
 			if (optionValue2 > 0){
 				$("#priority").removeClass("hidden");
+				$("#selectPriority").val(3);
 			}else{
 				$("#priority").addClass("hidden");
 				$("#description").addClass("hidden");

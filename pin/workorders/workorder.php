@@ -1109,8 +1109,6 @@ include '../includes/navbar.php';
 			var request = $.getJSON("../ajax/completework.php", {id : workOrderId, user : user_id}, function(data) {
 				console.log(data);
 				//alert("Message sent");
-				
-				
 			});
 		});
 		//Is machine down
