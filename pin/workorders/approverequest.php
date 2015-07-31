@@ -53,7 +53,7 @@ if(isset($_GET['id'])){
 	$hide_this= "hidden";
 	$message = "";
 	$assignedTechs = array();
-	if($accepted > 0){
+	if($accepted == 1){
 		//Hide Approve request button if it has already been approved.
 		//Fill in the data for the approve section
 		$hideApproval = "hidden";
@@ -77,6 +77,8 @@ if(isset($_GET['id'])){
 		while (($row = $result->fetch_object()) !== NULL) {
 			$assignedTechs[] = $row->assignedTo;
 		}
+	}elseif($accepted > 1){
+		header('location: openrequests.php');
 	}
 	//User Select dropdown
 	$selectUser = "";

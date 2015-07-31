@@ -34,6 +34,45 @@ include '../includes/navbar.php';
 	<li><a href="workorders.php">Work Orders</a></li>
 	<li class="active">Escalated Requests</li>
 </ol>
+<!-- Approve modal -->
+<div class="modal fade" id="approveModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title" id="approveModalLabel">Approval Override</h4>
+			</div>
+			<form>
+				<div class="modal-body ">
+					<div class="row form-group" id="declineReason">
+						<div class="col-md-2"><label for="declined" class="control-label">Reason</label></div>
+						<div class="col-md-6">
+							<select id="declined" name="declined" class="form-control">
+								<option value="0">---- Choose Reason -----</option>
+								<?php	
+									$query = $db->prepare("SELECT * FROM declinedreasons");
+									$query->execute();
+									$result = $query->get_result();
+										$i = 1;
+									while (($row = $result->fetch_object()) !== NULL) {	
+								?>
+										<option value="<?php echo $row->id; ?>"><?php echo $row->reason ?></option>
+								<?php
+									}
+								?>
+							</Select>
+						</div>
+					</div>
+				</div>
+				<input type="hidden" id="requestIdApprove", name="requestIdApprove" value="">
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary">Approve</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
 <!-- Decline modal -->
 <div class="modal fade" id="declineModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 	<div class="modal-dialog">
@@ -64,7 +103,7 @@ include '../includes/navbar.php';
 						</div>
 					</div>
 				</div>
-				<input type="hidden" id="requestId", name="requestId" value="">
+				<input type="hidden" id="requestIdDecline", name="requestIdDecline" value="">
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 					<button type="button" class="btn btn-primary">Decline</button>
@@ -113,7 +152,6 @@ include '../includes/navbar.php';
 	<div class="panel panel-primary">
 		<div class="panel-heading">Requests Escalated To Level 3</div>
 		<div class="panel-body">
-			
 			<table id="table_2" class="display testing">
 				<thead>
 					<tr>
@@ -176,7 +214,7 @@ include '../includes/navbar.php';
 				{ "data": "Priority", "sWidth": "10%"},
 				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
 					if( authWO >= 4){
-						return '<a class="btn btn-info btn-sm" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal" aria-label="Decline">Decline</button>';
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve">Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal" aria-label="Decline">Decline</button>';
 						//return '<a class="btn btn-info btn-sm" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<a class="btn btn-danger btn-sm"  href=deleterequest.php?id=' + data.ID + '>' + 'Decline' + '</a>';
 					}else{
 						return '<a class="btn btn-info btn-sm disabled" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<a class="btn btn-danger btn-sm disabled" href=deleterequest.php?id=' + data.ID + '>' + 'Decline' + '</a>';
@@ -211,10 +249,9 @@ include '../includes/navbar.php';
 				{ "data": "Declined Reason", "sWidth": "14%"},
 				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
 					if( authWO >= 4){
-						return '<a class="btn btn-info btn-sm" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal" aria-label="Decline">Decline</button>';
-						//return '<a class="btn btn-info btn-sm" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<a class="btn btn-danger btn-sm"  href=deleterequest.php?id=' + data.ID + '>' + 'Decline' + '</a>';
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve">Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal" aria-label="Decline">Decline</button>';
 					}else{
-						return '<a class="btn btn-info btn-sm disabled" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<a class="btn btn-danger btn-sm disabled" href=deleterequest.php?id=' + data.ID + '>' + 'Decline' + '</a>';
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve" disabled >Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal" aria-label="Decline" disabaled >Decline</button>';
 					}
 				}},
 				{ "data": "ID",
@@ -229,15 +266,19 @@ include '../includes/navbar.php';
 				}
 			}
 		});
-		
 		$( ".testing" ).on( "click", "[id^=decline-]", function() {
 			var buttonId = this.id;
 			var arr = buttonId.split('-');
 			buttonId = arr[1];
-			//alert(buttonId);
-			$('#requestId').val(buttonId);
-			
+			$('#requestIdDecline').val(buttonId);
 		});
+		$( ".testing" ).on( "click", "[id^=approve-]", function() {
+			var buttonId = this.id;
+			var arr = buttonId.split('-');
+			buttonId = arr[1];
+			$('#requestIdApprove').val(buttonId);
+		});
+		
 	});
 </script>
 </body>
