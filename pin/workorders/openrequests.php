@@ -67,7 +67,7 @@ include '../includes/navbar.php';
 				<input type="hidden" id="requestId", name="requestId" value="">
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-					<button type="button" class="btn btn-primary">Decline</button>
+					<button type="button" id="declineRequest" class="btn btn-primary">Decline</button>
 				</div>
 			</form>
 		</div>
@@ -121,7 +121,10 @@ include '../includes/navbar.php';
 <script src="../js/dataTables.colVis.js"></script>
 <script>
 	$(document).ready(function() {
-		var authWO = <?php echo $_SESSION['user_authWO'] ?>;
+		var user_id = <?php echo $_SESSION['user_id']; ?>;
+		var authWO = <?php echo $_SESSION['user_authWO']; ?>;
+		var rowIdx;
+		var table;
 		table = $('#table_id').DataTable( {
 			"bProcessing": true,
 			"sAjaxDataProp":"",
@@ -153,10 +156,26 @@ include '../includes/navbar.php';
 			var buttonId = this.id;
 			var arr = buttonId.split('-');
 			buttonId = arr[1];
-			//alert(buttonId);
 			$('#requestId').val(buttonId);
 			
 		});
+		
+		$('#table_id tbody').on( 'click', 'tr', function () {
+			rowIdx = table.row(this).index();
+			alert(rowIdx);
+		} );
+		
+		$("button#declineRequest").click(function(){
+			var requestId = $('#requestId').val();
+			var declinedReason = $('#declined').val();
+			var request = $.getJSON("../ajax/deleterequest.php", {id : requestId, reason : declinedReason, userId : user_id}, function(data) {
+				console.log(data);
+				$("#declineModal").modal('hide'); //hide modal
+				table.row(rowIdx).remove().draw(false);  
+				
+			});
+		});
+		
 	});
 </script>
 </body>
