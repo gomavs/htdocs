@@ -1,6 +1,19 @@
 <?php
 require '../includes/check_login.php';
-
+$hidden2 = "hidden";
+$hidden3 = "hidden";
+$query = $db->prepare("SELECT tier FROM escalation WHERE userId = ?");
+$query->bind_param("i", $_SESSION['user_id']);
+$query->execute();
+$result = $query->get_result();
+$row = $result->fetch_assoc();
+$tier = $row['tier'];
+if($tier == 2){
+	$hidden2 = "";
+}elseif($tier == 3){
+	$hidden2 = "";
+	$hidden3 = "";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/html">
@@ -73,8 +86,8 @@ include '../includes/navbar.php';
 		</div>
 	</div>
 </div>
-<!-- Decline modal -->
-<div class="modal fade" id="declineModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<!-- Decline modal 1 -->
+<div class="modal fade" id="declineModal1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header">
@@ -86,7 +99,7 @@ include '../includes/navbar.php';
 					<div class="row form-group" id="declineReason">
 						<div class="col-md-2"><label for="declined" class="control-label">Reason</label></div>
 						<div class="col-md-6">
-							<select id="declined" name="declined" class="form-control">
+							<select id="declined1" name="declined1" class="form-control">
 								<option value="0">---- Choose Reason -----</option>
 								<?php	
 									$query = $db->prepare("SELECT * FROM declinedreasons");
@@ -103,31 +116,71 @@ include '../includes/navbar.php';
 						</div>
 					</div>
 				</div>
-				<input type="hidden" id="requestIdDecline", name="requestIdDecline" value="">
+				<input type="hidden" id="requestIdDecline1", name="requestIdDecline1" value="">
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-					<button type="button" class="btn btn-primary">Decline</button>
+					<button type="button" class="btn btn-primary" id="declineRequest1">Decline</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<!-- Decline modal 2 -->
+<div class="modal fade" id="declineModal2" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title" id="declineModalLabel">Decline Reason</h4>
+			</div>
+			<form>
+				<div class="modal-body ">
+					<div class="row form-group" id="declineReason">
+						<div class="col-md-2"><label for="declined" class="control-label">Reason</label></div>
+						<div class="col-md-6">
+							<select id="declined2" name="declined2" class="form-control">
+								<option value="0">---- Choose Reason -----</option>
+								<?php	
+									$query = $db->prepare("SELECT * FROM declinedreasons");
+									$query->execute();
+									$result = $query->get_result();
+										$i = 1;
+									while (($row = $result->fetch_object()) !== NULL) {	
+								?>
+										<option value="<?php echo $row->id; ?>"><?php echo $row->reason ?></option>
+								<?php
+									}
+								?>
+							</Select>
+						</div>
+					</div>
+				</div>
+				<input type="hidden" id="requestIdDecline2", name="requestIdDecline2" value="">
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" id="declineRequest2">Decline</button>
 				</div>
 			</form>
 		</div>
 	</div>
 </div>
 <div class="container-fluid">
-	<div class="panel panel-primary">
+	<div class="panel panel-primary <?php echo $hidden2; ?>">
 		<div class="panel-heading">Requests Escalated To Level 2</div>
 		<div class="panel-body">
 			
-			<table id="table_1" class="display testing">
+			<table id="table_1" class="display do_action1">
 				<thead>
 					<tr>
 						<th>#</th>
+						<th></th>
 						<th>Type</th>
 						<th>Item</th>
 						<th>Description</th>
 						<th>Request Date</th>
-						<th>Request Time</th>
 						<th>Requested By</th>
-						<th>Priority</th>
+						<th>Declined By</th>
+						<th>Declined Reason</th>
 						<th>Command</th>
 						<th>ID</th>
 					</tr>
@@ -144,15 +197,16 @@ include '../includes/navbar.php';
 						<td></td>
 						<td></td>
 						<td></td>
+						<td></td>
 					</tr>
 				</tbody>
 			</table>
 		</div>
 	</div>
-	<div class="panel panel-primary">
+	<div class="panel panel-primary <?php echo $hidden3; ?>">
 		<div class="panel-heading">Requests Escalated To Level 3</div>
 		<div class="panel-body">
-			<table id="table_2" class="display testing">
+			<table id="table_2" class="display do_action2">
 				<thead>
 					<tr>
 						<th>#</th>
@@ -198,48 +252,19 @@ include '../includes/navbar.php';
 <script src="../js/dataTables.colVis.js"></script>
 <script>
 	$(document).ready(function() {
+		var user_id = <?php echo $_SESSION['user_id']; ?>;
 		var authWO = <?php echo $_SESSION['user_authWO'] ?>;
-		table = $('#table_1').DataTable( {
+		var rowIdx;
+		var table1;
+		var table2;
+		var 
+		table1 = $('#table_1').DataTable( {
 			"bProcessing": true,
 			"sAjaxDataProp":"",
 			"ajax": "../ajax/getescalated.php",
 			"aoColumns": [
-				{ "data": "#", "sWidth": "5%" },
-				{ "data": "Type", "sWidth": "7%" },
-				{ "data": "Item", "sWidth": "11%" },
-				{ "data": "Description", "sWidth": "25%" },
-				{ "data": "Request Date", "sWidth": "10%" },
-				{ "data": "Request Time", "sWidth": "10%" },
-				{ "data": "Requested By", "sWidth": "10%" },
-				{ "data": "Priority", "sWidth": "10%"},
-				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
-					if( authWO >= 4){
-						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve">Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal" aria-label="Decline">Decline</button>';
-						//return '<a class="btn btn-info btn-sm" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<a class="btn btn-danger btn-sm"  href=deleterequest.php?id=' + data.ID + '>' + 'Decline' + '</a>';
-					}else{
-						return '<a class="btn btn-info btn-sm disabled" href=approverequest.php?id=' + data.ID + '>' + 'Approve' + '</a>&nbsp;<a class="btn btn-danger btn-sm disabled" href=deleterequest.php?id=' + data.ID + '>' + 'Decline' + '</a>';
-					}
-				}},
-				{ "data": "ID",
-				  "visible": false,
-				  "searchable": false },
-				{ "data": "Priority",
-					"visible": false,
-					"searchable": false
-				}
-			]
-		});
-		table = $('#table_2').DataTable( {
-			"bProcessing": true,
-			"sAjaxDataProp":"",
-			"ajax": "../ajax/getescalated2.php",
-			"aoColumns": [
 				{ "data": "#", "sWidth": "3%" },
-				{	
-					"data": "Mark",
-					"sWidth": "2%",
-					"orderable": false
-				},
+				{ "data": "Mark", "sWidth": "2%", "orderable": false},
 				{ "data": "Type", "sWidth": "7%" },
 				{ "data": "Item", "sWidth": "11%" },
 				{ "data": "Description", "sWidth": "23%" },
@@ -249,14 +274,13 @@ include '../includes/navbar.php';
 				{ "data": "Declined Reason", "sWidth": "14%"},
 				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
 					if( authWO >= 4){
-						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve">Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal" aria-label="Decline">Decline</button>';
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve">Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal1" aria-label="Decline">Decline</button>';
 					}else{
-						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve" disabled >Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal" aria-label="Decline" disabaled >Decline</button>';
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve" disabled >Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal1" aria-label="Decline" disabaled >Decline</button>';
 					}
 				}},
-				{ "data": "ID",
-				  "visible": false,
-				  "searchable": false }
+				{ "data": "ID", "visible": false, "searchable": false },
+				
 			],
 			"createdRow": function ( row, data, index ) {
 				if(data.status == 3){
@@ -266,17 +290,94 @@ include '../includes/navbar.php';
 				}
 			}
 		});
-		$( ".testing" ).on( "click", "[id^=decline-]", function() {
+		table2 = $('#table_2').DataTable( {
+			"bProcessing": true,
+			"sAjaxDataProp":"",
+			"ajax": "../ajax/getescalated2.php",
+			"aoColumns": [
+				{ "data": "#", "sWidth": "3%" },
+				{ "data": "Mark", "sWidth": "2%", "orderable": false},
+				{ "data": "Type", "sWidth": "7%" },
+				{ "data": "Item", "sWidth": "11%" },
+				{ "data": "Description", "sWidth": "23%" },
+				{ "data": "Request Date", "sWidth": "10%" },
+				{ "data": "Requested By", "sWidth": "10%" },
+				{ "data": "Declined By", "sWidth": "10%"},
+				{ "data": "Declined Reason", "sWidth": "14%"},
+				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
+					if( authWO >= 4){
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve">Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal2" aria-label="Decline">Decline</button>';
+					}else{
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve" disabled >Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal2" aria-label="Decline" disabaled >Decline</button>';
+					}
+				}},
+				{ "data": "ID", "visible": false, "searchable": false }
+			],
+			"createdRow": function ( row, data, index ) {
+				if(data.status == 3){
+					$('td', row).eq(1).addClass('text-danger high-importance');
+				}else if (data.status == 2){
+					$('td', row).eq(1).addClass('text-primary med-importance');
+				}
+			}
+		});
+		$( ".do_action1" ).on( "click", "[id^=decline-]", function() {
 			var buttonId = this.id;
 			var arr = buttonId.split('-');
 			buttonId = arr[1];
-			$('#requestIdDecline').val(buttonId);
+			$('#requestIdDecline1').val(buttonId);
+			var request = $.getJSON("../ajax/escalated.php", {request : buttonId}, function(data) {
+				console.log(data);
+				$('#declined1').val(data[0].reason); 
+			});
+			
+			
 		});
-		$( ".testing" ).on( "click", "[id^=approve-]", function() {
+		$( ".do_action2" ).on( "click", "[id^=decline-]", function() {
+			var buttonId = this.id;
+			var arr = buttonId.split('-');
+			buttonId = arr[1];
+			$('#requestIdDecline2').val(buttonId);
+			var request = $.getJSON("../ajax/escalated.php", {request : buttonId}, function(data) {
+				console.log(data);
+				$('#declined2').val(data[0].reason); 
+			});
+		});
+		$( ".do_action1" ).on( "click", "[id^=approve-]", function() {
 			var buttonId = this.id;
 			var arr = buttonId.split('-');
 			buttonId = arr[1];
 			$('#requestIdApprove').val(buttonId);
+			
+		});
+
+		$('#table_1 tbody').on( 'click', 'tr', function () {
+			rowIdx = table1.row(this).index();
+		} );
+		
+		$('#table_2 tbody').on( 'click', 'tr', function () {
+			rowIdx = table2.row(this).index();
+		} );
+		
+		$("button#declineRequest1").click(function(){
+			var requestId = $('#requestIdDecline1').val();
+			var declinedReason = $('#declined1').val();
+			var request = $.getJSON("../ajax/deleterequest.php", {id : requestId, reason : declinedReason, userId : user_id}, function(data) {
+				console.log(data);
+				$("#declineModal1").modal('hide'); //hide modal
+				table1.row(rowIdx).remove().draw(false);  
+				
+			});
+		});
+		$("button#declineRequest2").click(function(){
+			var requestId = $('#requestIdDecline2').val();
+			var declinedReason = $('#declined2').val();
+			var request = $.getJSON("../ajax/deleterequest.php", {id : requestId, reason : declinedReason, userId : user_id}, function(data) {
+				console.log(data);
+				$("#declineModal2").modal('hide'); //hide modal
+				table2.row(rowIdx).remove().draw(false);  
+				
+			});
 		});
 		
 	});

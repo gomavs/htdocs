@@ -162,7 +162,7 @@ include '../includes/navbar.php';
 		
 		$('#table_id tbody').on( 'click', 'tr', function () {
 			rowIdx = table.row(this).index();
-			alert(rowIdx);
+			//alert(rowIdx);
 		} );
 		
 		$("button#declineRequest").click(function(){
