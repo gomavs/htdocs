@@ -8,6 +8,5 @@ if(isset($_GET['id']) && isset($_GET['machine']) && isset($_GET['userid'])){
 	$query = $db->prepare("UPDATE times SET completed = ?, completedby = ? WHERE item_id = ? AND machine_id = ?");
 	$query->bind_param("iiii", $completed, $userid, $item_id, $mid);
 	$query->execute();
-
 }
 ?>

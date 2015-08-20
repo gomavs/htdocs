@@ -47,45 +47,6 @@ include '../includes/navbar.php';
 	<li><a href="workorders.php">Work Orders</a></li>
 	<li class="active">Escalated Requests</li>
 </ol>
-<!-- Approve modal -->
-<div class="modal fade" id="approveModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-				<h4 class="modal-title" id="approveModalLabel">Approval Override</h4>
-			</div>
-			<form>
-				<div class="modal-body ">
-					<div class="row form-group" id="declineReason">
-						<div class="col-md-2"><label for="declined" class="control-label">Reason</label></div>
-						<div class="col-md-6">
-							<select id="declined" name="declined" class="form-control">
-								<option value="0">---- Choose Reason -----</option>
-								<?php	
-									$query = $db->prepare("SELECT * FROM declinedreasons");
-									$query->execute();
-									$result = $query->get_result();
-										$i = 1;
-									while (($row = $result->fetch_object()) !== NULL) {	
-								?>
-										<option value="<?php echo $row->id; ?>"><?php echo $row->reason ?></option>
-								<?php
-									}
-								?>
-							</Select>
-						</div>
-					</div>
-				</div>
-				<input type="hidden" id="requestIdApprove", name="requestIdApprove" value="">
-				<div class="modal-footer">
-					<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-					<button type="button" class="btn btn-primary">Approve</button>
-				</div>
-			</form>
-		</div>
-	</div>
-</div>
 <!-- Decline modal 1 -->
 <div class="modal fade" id="declineModal1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 	<div class="modal-dialog">
@@ -274,9 +235,9 @@ include '../includes/navbar.php';
 				{ "data": "Declined Reason", "sWidth": "14%"},
 				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
 					if( authWO >= 4){
-						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve">Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal1" aria-label="Decline">Decline</button>';
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" aria-label="Approve">Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal1" aria-label="Decline">Decline</button>';
 					}else{
-						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve" disabled >Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal1" aria-label="Decline" disabaled >Decline</button>';
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" aria-label="Approve" disabled >Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal1" aria-label="Decline" disabaled >Decline</button>';
 					}
 				}},
 				{ "data": "ID", "visible": false, "searchable": false },
@@ -306,9 +267,9 @@ include '../includes/navbar.php';
 				{ "data": "Declined Reason", "sWidth": "14%"},
 				{ "data": null, "sWidth": "10%", "bSortable": false, "mRender": function(data, type, full){
 					if( authWO >= 4){
-						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve">Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal2" aria-label="Decline">Decline</button>';
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" aria-label="Approve">Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal2" aria-label="Decline">Decline</button>';
 					}else{
-						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" data-toggle="modal" data-target="#approveModal" aria-label="Approve" disabled >Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal2" aria-label="Decline" disabaled >Decline</button>';
+						return '<button type="button" id="approve-' + data.ID + '" class="btn btn-info btn-sm" aria-label="Approve" disabled >Approve</button>&nbsp;<button type="button" id="decline-' + data.ID + '" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#declineModal2" aria-label="Decline" disabaled >Decline</button>';
 					}
 				}},
 				{ "data": "ID", "visible": false, "searchable": false }
@@ -347,7 +308,11 @@ include '../includes/navbar.php';
 			var buttonId = this.id;
 			var arr = buttonId.split('-');
 			buttonId = arr[1];
-			$('#requestIdApprove').val(buttonId);
+			//$('#requestIdApprove').val(buttonId);
+			var request = $.getJSON("../ajax/approve.php", {request : buttonId}, function(data) {
+				console.log(data);
+				
+			});
 			
 		});
 
