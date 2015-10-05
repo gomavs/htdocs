@@ -124,21 +124,25 @@ include '../includes/navbar.php';
 			<div class="row">
 				<table class="table table-hover tabletimes">
 					<tr>
-						<th width=20%>Work Center</th>
-						<th width=20%>Machine</th>
-						<th width=20%>Date</th>
-						<th width=20%>Time</th>
-						<th width=20%>Action</th>
+						<tr class="xxs">
+						<th width=15%>Work Center</th>
+						<th width=15%>Machine</th>
+						<th width=15%>Date</th>
+						<th width=15%>Time</th>
+						<th width=15%>Lap</th>
+						<th width=7%>Count</th>
+						<th width=18%>Action</th>
+					</tr>
 					</tr>
 					<?php
-					$result = mysqli_query($db,"SELECT * FROM timestudy.workcenter WHERE type = 1 ORDER BY center ASC");
+					$result = mysqli_query($db,"SELECT * FROM timestudy.workcenter WHERE type = 1 OR type = 3 AND inservice = 1 ORDER BY center ASC");
 					$machine_list = [];
 					while($row = mysqli_fetch_array($result)) {
 						$mid =  $row['id'];
 						$wc = $row['center'];
 						$mName = $row['name'];
 						$machine_list[] = [$mid];
-						echo "<tr id=\"machine-$mid\"><td>".$wc."</td><td>".$mName."</td><td class =\"study_date\"></td><td class=\"elapsed_time\" id=\"runner-$mid\"></td><td class =\"do_action\" id=\"$mid\"></td></tr>";
+						echo "<tr class=\"xxs\" id=\"machine-$mid\"><td>".$wc."</td><td >".$mName."</td><td class =\"study_date\"></td><td class=\"elapsed_time\" id=\"runner-$mid\"></td><td class=\"lap_time\" id=\"runnerLap-$mid\"></td><td class=\"counter\" id=\"counter-$mid\"></td><td class =\"do_action\" id=\"$mid\"></td></tr>";
 					}
 					?>
 				</table>
@@ -203,19 +207,24 @@ include '../includes/navbar.php';
 			$.each(machine_list, function(k, v){
 				$("#runner-" + v).runner('stop');
 				$("#runner-" + v).runner('reset');
+				$("#runnerLap-" + v).runner('stop');
+				$("#runner-Lap" + v).runner('reset');
 				var start_button = "<button id=\"startTimer-"+ v +"\" type=\"button\" class=\"btn btn-success btn-xs \">Start</button>";
 				$("#machine-" + v + " td.study_date").html(" ");
 				$("#machine-" + v + " td.elapsed_time").html(" ");
+				$("#machine-" + v + " td.lap_time").html(" ");
+				$("#machine-" + v + " td.counter").html(" ");
 				$("#machine-" + v + " td.do_action").html(start_button);
-				$("#runner-" + v).runner({autostart: false, milliseconds: false});
+				$("#runner-" + v).runner({autostart: false, milliseconds: false});//Overall timer initialize
+				$("#runnerLap-" + v).runner({autostart: false, milliseconds: false});//Lap timer initialize
 			});
 			$.each(data, function(key, value) {
-				var a = new Date(value.start_time*1000);
+				var a = new Date(value.first_start * 1000);
 				var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 				var year = a.getFullYear();
 				var month = months[a.getMonth() - 1];
 				var date = a.getDate();
-				var timeDiff = value.end_time - value.start_time;
+				var timeDiff = value.avg_time;
 				var seconds = Math.round(timeDiff % 60);
 				timeDiff = Math.floor(timeDiff / 60);
 				var minutes = Math.round(timeDiff % 60);
@@ -229,23 +238,31 @@ include '../includes/navbar.php';
 				}else{
 					var elapsed_time = hours + "hr " + minutes + "m " + seconds + "s";
 				}
-				if(value.start_time > 0 && !value.end_time){
-					var action_button = "<button id=\"stopTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-danger btn-xs\">Stop</button>";
+				if(!value.last_end){
+					var elapsed_time = "";
 					var time_now = new Date().getTime();
-					var start_time = value.start_time * 1000;
+					var start_time = value.first_start * 1000;
 					startRunner = time_now - start_time;
 					$("#runner-" + value.machine_id).runner({
 						startAt: startRunner, 
 						milliseconds: false
 					});
-					$("#runner-" + value.machine_id).runner('start');
-				} else if(!value.start_time){
-					var action_button = "<button id=\"startTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-success btn-xs\">Start</button>";
+					$("#runner-" + value.machine_id).runner('start');//Start overall runner
+					var start_time = value.last_start * 1000;
+					startRunner = time_now - start_time;
+					$("#runnerLap-" + value.machine_id).runner({
+						startAt: startRunner, 
+						milliseconds: false
+					});
+					$("#runnerLap-" + value.machine_id).runner('start');//Start Lap runner
+					var action_button = "<button id=\"lapTimer-"+ value.machine_id +"\"type=\"button\" class=\"btn btn-info btn-xs\">Lap</button>   <button id=\"stopTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-danger btn-xs\">Stop</button>";
 				}else{
-					if(value.completed == 0){
-						var action_button = "<button id=\"resetTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-warning btn-xs\">Reset</button>  <button id=\"doneTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-primary btn-xs\">Done</button>";
-					}else{
+					var elapsed_time = hours + "hr " + minutes + "m " + seconds + "s";
+					$("#machine-" + value.machine_id + " td.elapsed_time").html(elapsed_time);
+					if(value.completed == 1){
 						var action_button = "<button id=\"resetTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-warning btn-xs\">Reset</button>";
+					}else{
+						var action_button = "<button id=\"resetTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-warning btn-xs\">Reset</button>  <button id=\"doneTimer-"+ value.machine_id +"\" type=\"button\" class=\"btn btn-primary btn-xs\">Done</button>";
 					}
 				}
 				
@@ -266,29 +283,47 @@ include '../includes/navbar.php';
 			$("#machine-" + v + " td.do_action").html(" ");
 		});
 	});
-
+	//Start Timer button
 	$( ".do_action" ).on( "click", "[id^=startTimer-]", function() {
 		var buttonId = this.id;
 		var arr = buttonId.split('-');
 		buttonId = arr[1];
 		$("#runner-" + buttonId).runner('start');
-		var action_button = "<button id=\"stopTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-danger btn-xs\">Stop</button>";
+		$("#runnerLap-" + buttonId).runner('start');
+		var action_button = "<button id=\"lapTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-info btn-xs\">Lap</button>   <button id=\"stopTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-danger btn-xs\">Stop</button>";
 		$("#machine-" + buttonId + " td.do_action").html(action_button);
 		var request = $.getJSON("../ajax/starttimes.php", {id : partId, machine : buttonId}, function(data) {
 			console.log(data);
 			$.each(data, function(key, value) {
-				//alert (value.start_time);
 				var a = format_date(value.start_time);
 				$("#machine-" + buttonId + " td.study_date").html(a);
+				$("#counter-" + buttonId).text(1);
 			});
 		});
 	});
-	
+	//Lap timer button
+	$( ".do_action" ).on( "click", "[id^=lapTimer-]", function() {
+		var buttonId = this.id;
+		var arr = buttonId.split('-');
+		buttonId = arr[1];
+		$("#runnerLap-" + buttonId).runner('stop');
+		$("#runnerLap-" + buttonId).runner('reset', true);
+		$("#runnerLap-" + buttonId).runner('start');
+		var count = parseInt($("#counter-" + buttonId).html());
+		count = count + 1;
+		$("#counter-" + buttonId).text(count);
+		var request = $.getJSON("../ajax/laptimes.php", {id : partId, machine : buttonId}, function(data) {
+			console.log(data);
+			
+		});
+	});
+	//Stop Timer button
 	$( ".do_action" ).on( "click", "[id^=stopTimer-]", function() {
 		var buttonId = this.id;
 		var arr = buttonId.split('-');
 		buttonId = arr[1];
 		$("#runner-" + buttonId).runner('stop');
+		$("#runnerLap-" + buttonId).runner('stop');
 		var action_button = "<button id=\"resetTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-warning btn-xs\">Reset</button>  <button id=\"doneTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-primary btn-xs\">Done</button>";
 		$("#machine-" + buttonId + " td.do_action").html(action_button);
 		var request = $.getJSON("../ajax/updatetimes.php", {id : partId, machine : buttonId}, function(data) {
@@ -305,9 +340,12 @@ include '../includes/navbar.php';
 		var action_button = "<button id=\"startTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-success btn-xs\">Start</button>";
 		$("#machine-" + buttonId + " td.do_action").html(action_button);
 		$("#machine-" + buttonId + " td.study_date").html(" ");
+		$("#counter-" + buttonId).text("");
+		$("#runnerLap-" + buttonId).runner('stop');
+		$("#runnerLap-" + buttonId).runner('reset');
 		var request = $.getJSON("../ajax/removetimes.php", {id : partId, machine : buttonId}, function(data) {
 			console.log(data);
-			$("#machine-" + buttonID + " td.study_date").html(" ");
+			$("#machine-" + buttonId + " td.study_date").html(" ");
 			
 		});
 	});
@@ -317,9 +355,10 @@ include '../includes/navbar.php';
 		var arr = buttonId.split('-');
 		buttonId = arr[1];
 		$("#runner-" + buttonId).runner('stop');
-		var action_button = "<button id=\"resetTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-warning btn-xs\" disabled>Reset</button>";
+		$("#runnerLap-" + buttonId).runner('stop');
+		var action_button = "<button id=\"resetTimer-"+ buttonId +"\"type=\"button\" class=\"btn btn-warning btn-xs\">Reset</button>";
 		$("#machine-" + buttonId + " td.do_action").html(action_button);
-		var request = $.getJSON("../ajax/finishtimes.php", {id : partId, machine : buttonId}, function(data) {
+		var request = $.getJSON("../ajax/finishtimes.php", {id : partId, machine : buttonId, userid : user_id}, function(data) {
 			console.log(data);
 			
 		});

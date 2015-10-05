@@ -83,7 +83,7 @@ include '../includes/navbar.php';
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 <script src="../js/bootstrap.min.js"></script>
 <script src="../js/jquery-ui.js"></script>
-<script type="text/javascript" charset="utf8" src="../js/jquery.dataTables.js"></script>
+<script src="../js/jquery.dataTables.js" type="text/javascript" charset="utf8" ></script>
 <script src="../js/dataTables.tableTools.min.js"></script>
 <script src="../js/dataTables.colVis.js"></script>
 <script>

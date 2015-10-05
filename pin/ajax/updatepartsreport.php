@@ -4,7 +4,6 @@ require_once("../includes/dbConnect.php");
 $start_time = strtotime($_GET['starttime']);
 $end_time = strtotime($_GET['endtime']);
 
-
 $q = 1;
 $data = [];
 $query = $db->prepare("SELECT * FROM times WHERE end_time >= ? AND end_time < ? AND completed = ? ORDER BY end_time ASC");

@@ -6,7 +6,6 @@ $data = [];
 if(isset($_POST["partnumber"])){
 	$last_level = 0;
 	$search_value = $_POST["partnumber"];
-	
 	//////////////////////// Get info for entered part number ///////////////////////////////////
 	$query = $db->prepare("SELECT * FROM part WHERE partnumber = ?");
 	$query->bind_param("s", $_POST["partnumber"]);
@@ -41,54 +40,9 @@ if(isset($_POST["partnumber"])){
 		json_encode($data);
 	}
 	//display_children($row['id'], 1);
-$build_table= "<thead>";
-$build_table.= "<tr><th>Part Number</th><th>Part Description</th><th>Parent Number</th><th>Work Center</th><th>Machine</th><th>Date</th><th>Time</th></tr>";					
-$build_table.= "</thead><tbody><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody>";	
+	
 
 }
-/*
-function display_children($category_id, $level){
-	global $query;
-	global $query2;
-	global $return_data;
-	global $ul_count;
-	global $last_level;
-	$query->bind_param("i", $category_id);
-	$query->execute();
-	$result = $query->get_result();
-	// display each child
-	while ($row = $result->fetch_array(MYSQLI_ASSOC)){
-		$query2->bind_param("i", $row['id']);
-		$query2->execute();
-		$result2 = $query2->get_result();
-		$row_cnt = $result2->num_rows;
-		if($level > $last_level){
-			if($row_cnt > 0){
-				$return_data .= "<ul  class=\"sub\"><li class=\"momma\" id=\"".$row['id']."\">".$row['partnumber']." "."<span>".$row['partdesc']."</span>";
-			}else{
-				$return_data .= "<ul  class=\"sub\"><li class=\"items\" id=\"".$row['id']."\">".$row['partnumber']." "."<span>".$row['partdesc']."</span></li>";
-			}
-			$ul_count = $ul_count + 1;
-		}elseif($level < $last_level){
-			$return_data .= "</ul></li>";
-			if($row_cnt >0){
-				$return_data .= "<li class=\"momma\" id=\"".$row['id']."\">".$row['partnumber']." "."<span>".$row['partdesc']."</span>";
-			}else{
-				$return_data .= "<li class=\"items\" id=\"".$row['id']."\">".$row['partnumber']." "."<span>".$row['partdesc']."</span></li>";
-			}
-			$ul_count = $ul_count - 1;
-		}else{
-			if($row_cnt >0){
-				$return_data .= "<li class=\"momma\" id=\"".$row['id']."\">".$row['partnumber']." "."<span>".$row['partdesc']."</span>";
-			}else{
-				$return_data .= "<li class=\"items\" id=\"".$row['id']."\">".$row['partnumber']." "."<span>".$row['partdesc']."</span></li>";
-			}
-		}
-		$last_level = $level;
-		// call this function again to display this child's children
-		display_children($row['id'], $level+1);
-	}
-}*/
 
 function secondsToWords($seconds){
     /*** return value ***/
@@ -121,6 +75,11 @@ function secondsToWords($seconds){
 <link href="../css/bootstrap.min.css" rel="stylesheet">
 <link href="../css/main.css" rel="stylesheet">
 
+<link rel="stylesheet" type="text/css" href="../css/jquery.dataTables.css">
+<link rel="stylesheet" type="text/css" href="../css/dataTables.tableTools.min.css">
+<link rel="stylesheet" type="text/css" href="../css/dataTables.colVis.css">
+
+
 <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
 <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
 <!--[if lt IE 9]>
@@ -144,58 +103,126 @@ include '../includes/navbar.php';
 			<h2 class="page-header">Part Time Studies</h2>
 		</div>	
 	</div>
-	<div class="row">
-		<div class="col-md-12">
-			<form method = "POST">
-			<div class="col-md-2"><label>Part Number:</label></div>
-			<div class="col-md-3"><input type="text" class="form-control" name="partnumber" id="autocomplete" autofocus placeholder="Enter part number"><input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;"/></div>
-			</form>
-		</div>
+	<div class="row col-md-12">
+		<form method = "POST">
+			<div class="col-md-1"><label>Part Number:</label></div>
+			<div class="col-md-2"><input type="text" class="form-control" name="partnumber" id="autocomplete" autofocus placeholder="Enter part number"><input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;"/></div>
+		</form>
 	</div>
-	<div class="row">
-		<div class="col-md-12">
-			<table id="table_id" class="display">
-				<?php echo $build_table; ?>
+	<div class="row col-md-12 spacer hidden" id="partTable">
+			<table id="table_id" width=100%>
+				<thead>
+					<tr>
+						<th>Part Number</th>
+						<th>Part Description</th>
+						<th>Parent Number</th>
+						<th>Work Center</th>
+						<th>Machine</th>
+						<th>Date</th>
+						<th>Average Time</th>
+						<th>Cycles</th>
+						<th>id</th>
+					</tr>					
+				</thead>
+				<tbody>
+					<tr>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr>
+				</tbody>
 			</table>
-		</div>
+		
 	</div>
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-<script type="text/javascript" src="../js/jquery.autocomplete.min.js"></script>
+<script src="../js/jquery.autocomplete.min.js" type="text/javascript" ></script>
 <script src="../js/bootstrap.min.js"></script>
-<script src="../js/jquery-ui.js"></script>
-<script type="text/javascript" charset="utf8" src="../js/jquery.dataTables.js"></script>
+<script src="../js/jquery.dataTables.js" type="text/javascript" charset="utf8" ></script>
+<script src="../js/dataTables.tableTools.min.js"></script>
+<script src="../js/dataTables.colVis.js"></script>
 <script>
-var data = "";
-$(function(){
-	$('#autocomplete').autocomplete({
-		serviceUrl:"../ajax/search.php",
-		onSelect: function(suggestion) {
-		}
-	});
-});
-	
+	$(document).ready(function() {
+		var data = "";
+		var itemId = "";
+		var table;
+		$(function(){
+			$('#autocomplete').autocomplete({
+				serviceUrl:"../ajax/search.php",
+				onSelect: function(suggestion) {
+					itemId = $(this).val();
+					//alert(itemId);
+					if(table){
+						table.destroy();
+					}
+					table_fill(itemId);
+				}
+			});
+		});
 
-$(document).ready(function() {
-	$('#table_id').DataTable( {
-		//"processing": true,
-		//"bProcessing": true,
-		//"sAjaxDataProp":"",
-		//"bServerSide": true,
-		//"ajax": "../ajax/updatepartsreport.php?starttime=" + startDate + "&endtime=" + endDate,
-		data: data,
-		"columns": [
-			{ "data": "Part Number" },
-			{ "data": "Part Description" },
-			{ "data": "Parent Number" },
-			{ "data": "Work Center" },
-			{ "data": "Machine" },
-			{ "data": "Date" },
-			{ "data": "Time" }
-		]
+		$('#autocomplete').keypress(function (e) {
+			var key = e.which;
+			// the enter key code
+			if(key == 13){
+				itemId = $(this).val();
+				//alert(itemId);
+				if(table){
+					table.destroy();
+				}
+				table_fill(itemId);
+				return false;  
+			}
+		});
+		function table_fill(item_Id){
+			$("#partTable").removeClass("hidden");
+			table = $('#table_id').DataTable( {
+				"aLengthMenu": [[15, 25, 50, 100, -1], [15, 25, 50, 100, "All"]],
+				"iDisplayLength": 15,
+				dom: 'C&T<"clear">lfrtip',
+				"oColVis": { "aiExclude": [ 8 ]},
+				tableTools: {
+					"sRowSelect": "os",
+					"aButtons": [ "select_all", "select_none", "copy", "print", "csv" ]
+				},
+				"bProcessing": true,
+				"sAjaxDataProp":"",
+				"ajax": "../ajax/getpartsreport.php?partId=" + itemId,
+				data: data,
+				"columns": [
+					{ "data": "Part Number" },
+					{ "data": "Part Description" },
+					{ "data": "Parent Number" },
+					{ "data": "Work Center" },
+					{ "data": "Machine" },
+					{ "data": "Date" },
+					{ "data": "Average Time" },
+					{ "data": "Cycles" },
+					{ "data": "id",
+						  "visible": false,
+						  "searchable": false
+					}
+				],
+				"fnRowCallback": function( nRow, data, iDisplayIndex ) {
+					try{
+						if(data.status == 1){
+							//$(nRow).addClass("bg-mama");
+							$(nRow).css({"background-color":"#d9edf7"});
+						}						
+					} catch(ex){
+						alert("fnRowCallback exception:");
+					}
+					return nRow
+				}
+			});
+		};
 	});
-});
 
 </script>
 </body>

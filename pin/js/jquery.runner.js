@@ -217,7 +217,7 @@
       }
       nowTime = _$.now();
       if (typeof this.settings.startAt === 'number' && !this.settings.countdown) {
-        nowTime -= this.settings.startAt;
+		nowTime -= this.settings.startAt;
       }
       this.startTime = this.lapTime = this.lastTime = nowTime;
       this.total = this.settings.startAt;
