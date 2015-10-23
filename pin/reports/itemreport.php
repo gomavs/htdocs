@@ -120,12 +120,14 @@ include '../includes/navbar.php';
 						<th>Machine</th>
 						<th>Date</th>
 						<th>Average Time</th>
+						<th>Parts per Hour</th>
 						<th>Cycles</th>
 						<th>id</th>
 					</tr>					
 				</thead>
 				<tbody>
 					<tr>
+						<td></td>
 						<td></td>
 						<td></td>
 						<td></td>
@@ -203,6 +205,7 @@ include '../includes/navbar.php';
 					{ "data": "Machine" },
 					{ "data": "Date" },
 					{ "data": "Average Time" },
+					{ "data": "Parts per Hour" },
 					{ "data": "Cycles" },
 					{ "data": "id",
 						  "visible": false,

@@ -21,22 +21,19 @@ if(isset($_POST['submit'])){
 	$hashed_password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 	$department = $_POST['selectDepartment'];
 	$active = $_POST['active'];
+	$partCheck = 0;
+	$tsAuthLevel = 0;
+	$workCheck = 0;
+	$woAuthLevel = 0;
 	if(isset($_POST['partCheck'])){
 		$partCheck = 1;
 		$tsAuthLevel = $_POST['tsAuthLevel'];
-	} else {
-		$partCheck = 0;
-		$tsAuthLevel = 0;
 	}
 	//set home page
 	if(isset($_POST['workCheck'])){
 		$workCheck = 1;
 		$woAuthLevel = $_POST['woAuthLevel'];
-	} else {
-		$workCheck = 0;
-		$woAuthLevel = 0;
-	}
-	
+	}	
 	if($partCheck == 1 && $workCheck == 1){
 		$homePage = "index.php";
 	}elseif($partCheck = 1 && $workCheck == 0){

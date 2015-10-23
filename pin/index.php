@@ -29,6 +29,9 @@ include 'includes/navbar.php';
 </ol>
 <div class="container administration">
 	<div class="row">
+		<?php
+			if($permission[1] == 1){
+		?>
 		<div class="col-lg-4">
 			<img class="img-rounded" src="images/work-order.png" alt="Work Orders" style="width: 140px; height: 140px;">
 			<h2>Work Order System</h2>
@@ -37,6 +40,10 @@ include 'includes/navbar.php';
 				<a class="btn btn-primary" href="workorders/workorders.php" role="button">Work Orders</a>
 			</p>
 		</div>
+		<?php
+			}
+			if($permission[0] == 1){
+		?>
 		<div class="col-lg-4">
 			<img class="img-rounded" src="images/stop-watch.png" alt="Time Study" style="width: 140px; height: 140px;">
 			<h2>Time Study</h2>
@@ -45,6 +52,9 @@ include 'includes/navbar.php';
 				<a class="btn btn-primary" href="timestudy/index.php" role="button">Time Studies</a>
 			</p>
 		</div>
+		<?php
+			}
+		?>
 	<!--<div class="col-lg-4">
 			<img class="img-rounded" src="images/machinestime.png" alt="Machining Times" style="width: 140px; height: 140px;">
 			<h2>Machining Times</h2>
